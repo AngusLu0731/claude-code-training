@@ -1,40 +1,75 @@
 ---
-title: Welcome to Starlight
-description: Get started building your docs site with Starlight.
-template: splash # Remove or comment out this line to display the site sidebar on this page.
-hero:
-  tagline: Congrats on setting up a new Starlight project!
-  image:
-    file: ../../assets/houston.webp
-  actions:
-    - text: Example Guide
-      link: /guides/example/
-      icon: right-arrow
-    - text: Read the Starlight docs
-      link: https://starlight.astro.build
-      icon: external
-      variant: minimal
+title: Claude Code 進階實作教材
+description: 給已會 Claude Code 基礎的人：多 session 多工、workflow 定義、subagent、hooks、skills，五章跟著做。
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+import { Steps, Aside } from '@astrojs/starlight/components';
+import Progress from '../../components/Progress.astro';
+import { CLAUDE_CODE_VERSION, VERIFIED_ON } from '../../data/version';
 
-## Next steps
+這是一套「跟著做」的教材，不是講義。五個進階主題各自成章，每章固定四段：**用途**、**什麼時候用**、**基本用法**、**你來做**。
+「你來做」給你可以直接複製的指令、做完應該看到什麼、以及自檢勾選；真正的練習在你自己的終端機裡完成，網頁只負責帶路與記錄進度。
 
-<CardGrid stagger>
-	<Card title="Update content" icon="pencil">
-		Edit `src/content/docs/index.mdx` to see this page change.
-	</Card>
-	<Card title="Change page layout" icon="document">
-		Delete `template: splash` in `src/content/docs/index.mdx` to display a
-		sidebar on this page.
-	</Card>
-	<Card title="Add new content" icon="add-document">
-		Add Markdown or MDX files to `src/content/docs` to create new pages.
-	</Card>
-	<Card title="Configure your site" icon="setting">
-		Edit your `sidebar` and other config in `astro.config.mjs`.
-	</Card>
-	<Card title="Read the docs" icon="open-book">
-		Learn more in [the Starlight Docs](https://starlight.astro.build/).
-	</Card>
-</CardGrid>
+<Progress />
+
+## 開始前
+
+**對象**：已會 Claude Code 基礎的人——會在終端機開 `claude`、會下提示詞、看得懂 `git diff`。沒碰過 worktree、workflow、subagent、hooks、skills 也沒關係，這五章就是為此而寫。
+
+### 檢查清單
+
+- `claude --version` 顯示 **{CLAUDE_CODE_VERSION} 或更新**；比較舊就先 `claude update`。各章行為在幾個版本之間有分水嶺，版本太舊會跟站上寫的對不起來。
+- `python3 --version` 顯示 **3.9 或更新**（練習 repo 只用標準函式庫，不用裝套件）。
+- 有 `git`。
+
+### 三件先講清楚的事
+
+<Aside type="caution" title="請在終端機執行 claude">
+本站所有步驟都在終端機執行 `claude`。VS Code 或 Desktop 使用者請開一個終端機照做，畫面才會跟站上一致；IDE 面板的按鈕與提示文字不同，容易對不上。
+</Aside>
+
+<Aside type="note" title="權限模式不同，提示就不同">
+auto／manual 權限模式看到的提示不一樣（有人會被問「要不要允許」，有人不會）。站上「預期看到」一律以**結果**為準：`/workflows` 有沒有進度、`git status` 有沒有那個檔、diff 是不是那一行。提示長得不一樣不代表做錯。
+</Aside>
+
+<Aside type="tip" title="進度只存在你的瀏覽器">
+自檢勾選存在這台電腦的瀏覽器（localStorage），不會上傳、換電腦不會同步。Safari 超過 7 天沒開本站會把它清掉，建議用 Chrome，或一週內做完。
+</Aside>
+
+### 共用步驟（每一章都從這裡開始）
+
+<Steps>
+
+1. 把練習 repo clone 下來，之後五章都在這個目錄裡做：
+
+   ```bash
+   git clone https://github.com/AngusLu0731/claude-code-practice.git
+   cd claude-code-practice
+   ```
+
+2. 第一次在這個目錄開 `claude`，會出現「要不要信任這個資料夾」的對話，選 **Yes**：
+
+   ```bash
+   claude
+   ```
+
+3. 看到提示符就可以打 `/exit` 離開。信任只需要接受一次；之後每章都會請你重開 `claude`，那時不會再問。
+
+</Steps>
+
+## 五章
+
+| 章 | 主題 | 你會做出什麼 |
+| --- | --- | --- |
+| [第 1 章](/01-multi-session/) | 多 session 多工 | 兩個 worktree 分工、第三個終端機 merge 收斂 |
+| [第 2 章](/02-workflow/) | workflow 定義 | 自己的 `.claude/workflows/review-flow.js`，用 `/review-flow` 跑完 |
+| [第 3 章](/03-subagent/) | subagent | 自己的 `.claude/agents/reviewer.md`，派它審一個檔 |
+| [第 4 章](/04-hooks/) | hooks | 一個 PreToolUse hook，親眼看到它擋下一次 Edit |
+| [第 5 章](/05-skills/) | skills | 自己的 `.claude/skills/changelog/SKILL.md`，用 `/changelog` 叫起來 |
+
+每章大約 20 到 40 分鐘。順序建議照章，但每章開頭都會把 repo 重置回乾淨狀態，跳著做也可以。
+
+<Aside type="note">
+教材內容以 Claude Code {CLAUDE_CODE_VERSION}（{VERIFIED_ON} 實跑驗證）為準。之後版本若行為不同，以官方文件為主：
+[sub-agents](https://code.claude.com/docs/en/sub-agents)、[hooks](https://code.claude.com/docs/en/hooks)、[skills](https://code.claude.com/docs/en/skills)、[workflows](https://code.claude.com/docs/en/workflows)、[worktrees](https://code.claude.com/docs/en/worktrees)。
+</Aside>
