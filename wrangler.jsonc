@@ -1,0 +1,8 @@
+{
+  // Cloudflare Workers 靜態資產部署：dist/ 直接當靜態站，掛 training 子網域（custom domain）。
+  "name": "claude-code-training",
+  "compatibility_date": "2026-08-27",
+  "assets": { "directory": "./dist" },
+  "workers_dev": false,
+  "routes": [{ "pattern": "training.angus-lu.cc", "custom_domain": true }]
+}
