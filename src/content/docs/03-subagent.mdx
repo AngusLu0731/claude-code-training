@@ -130,7 +130,25 @@ tools: Read, Grep, Glob
 - 回報是幾行 `src/todo.py:<行號> — 建議` 形式的條目，最後一句總結。行號要對得上你打開檔案看到的位置。
 - `git status --porcelain` 只有 `?? .claude/agents/reviewer.md`——它只有讀取工具，改不了任何檔。
 
-@@RUNLOG(3)@@
+### 實跑範例（節錄）
+
+同一份 `reviewer.md` 在練習 repo 上派一次的回報開頭（行號對得上 `main` 的 `src/todo.py`）：
+
+```text
+## 高（會 crash 或資料遺失）
+
+- src/todo.py:24 — json.load(fh) 無錯誤處理。檔案為空或被改壞時直接噴 JSONDecodeError traceback，
+  而且 add/list/done 全部不能用、沒有復原路徑。建議捕捉 JSONDecodeError/OSError，印清楚訊息到 stderr 並回傳非 0。
+- src/todo.py:28 — save_items 用 open("w") 直接覆寫，非原子寫入。open 一執行檔案就被截成 0 bytes，
+  若 json.dump 途中被中斷（Ctrl-C、磁碟滿）舊資料整份消失。建議先寫暫存檔再 os.replace。
+
+## 中
+
+- src/todo.py:16 — TODO_FILE="" 時 Path("") 等於 Path(".")，:21 的 exists() 為 True，:23 開檔直接 IsADirectoryError。
+  建議改 os.environ.get("TODO_FILE") or ".todo.json"。
+```
+
+你的回報內容不會一模一樣（模型每次找到的點不同），但**每一筆都帶 `src/todo.py:行號`**、而且 `git status` 沒有任何檔被改，這兩點應該一致。
 
 <Checklist items={[
   { id: 'ch3-ex1-1', text: '.claude/agents/reviewer.md 貼好、重開後 @agent-reviewer 選得到' },

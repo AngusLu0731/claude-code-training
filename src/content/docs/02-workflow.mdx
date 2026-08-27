@@ -170,7 +170,31 @@ Workflow 是一支放在 `.claude/workflows/<name>.js` 的腳本：用 JavaScrip
 
 環境不支援 workflow 的人看這裡。下面是同一支 `review-flow.js` 在練習 repo 上實跑一次的結果（無頭模式，2.1.246）：
 
-@@RUNLOG(2)@@
+`/review-flow` 送出後，任務面板的一行進度與 `/workflows` 進度畫面（依實跑的進度事件整理，數字是那一次的實際值）：
+
+```text
+review-flow  平行審兩個檔再彙整   3 agents · 52,494 tokens · 81s · completed
+├─ Review
+│  ├─ review:todo    done   21,309 tokens   5 tool calls   72.6s
+│  └─ review:tests   done   16,163 tokens   3 tool calls   56.9s
+└─ Synthesize
+   └─ synthesize     done   15,022 tokens   0 tool calls    8.5s
+```
+
+腳本 `log()` 印的那一行：`Review 完成：共 10 筆 findings`。
+
+workflow 回傳（Synthesize 站的輸出，也就是你會在對話裡看到的摘要）：
+
+```text
+整體來看，src/todo.py 功能正確但缺乏防禦性：狀態檔損毀或寫入中斷都會噴 traceback 甚至遺失資料；
+tests/test_todo.py 只覆蓋 happy path，錯誤分支與參數驗證幾乎沒測，且測試環境清理不完整。建議優先處理：
+
+1. src/todo.py:28 — save_items() 直接覆寫，寫入中斷會清空待辦；改為暫存檔 + os.replace() 原子寫入。
+2. src/todo.py:24 — load_items() 未處理壞 JSON／非 list／缺鍵，應捕捉例外並回報「狀態檔損毀」。
+3. tests/test_todo.py:18 — tearDown 未刪暫存目錄、環境變數未還原；改用 TemporaryDirectory 與 mock.patch.dict。
+```
+
+跑完 `git status --porcelain` 只有 `?? .claude/workflows/review-flow.js`，兩個檔案都沒被改。
 
 <Checklist items={[
   { id: 'ch2-ex1-1', text: '.claude/workflows/review-flow.js 貼好、重開 claude 後 /review-flow 叫得到' },

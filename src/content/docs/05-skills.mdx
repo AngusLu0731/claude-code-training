@@ -138,7 +138,18 @@ argument-hint: [since-ref]
 - Claude 跑 `git log --oneline`，依 type 分組，寫入 `CHANGELOG.md`，並把那段印給你看。
 - `git status --porcelain` 出現 `?? CHANGELOG.md`；打開檔案第一行是 `## Unreleased (今天日期)`，底下是 `### feat`、`### docs` 之類的分組條目。
 
-@@RUNLOG(5)@@
+### 實跑範例
+
+在乾淨的 `main` 上跑一次 `/changelog`，產出的 `CHANGELOG.md`（`main` 只有一個 commit，所以只有一組）：
+
+```markdown
+## Unreleased (2026-08-27)
+
+### feat
+- todo CLI、測試與各章參考解答（598b018）
+```
+
+日期會是你跑的那天；如果你在第 1 章 merge 過 worktree，這裡會多出那幾個 commit 的條目。
 
 <Checklist items={[
   { id: 'ch5-ex1-1', text: '.claude/skills/changelog/SKILL.md 貼好、重開後 / 清單看得到 changelog' },
