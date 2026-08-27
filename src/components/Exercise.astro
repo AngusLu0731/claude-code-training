@@ -1,0 +1,38 @@
+---
+/** 練習外框：id 形如 chN-exM，title 顯示在標題列；內容由各章 mdx 放 Steps／指令／預期看到／Checklist。 */
+interface Props {
+	id: string;
+	title: string;
+}
+const { id, title } = Astro.props;
+---
+
+<section class="exercise" id={id} data-exercise={id}>
+	<h3 class="exercise-title"><span class="exercise-badge">你來做</span>{title}</h3>
+	<slot />
+</section>
+
+<style>
+	.exercise {
+		border: 1px solid var(--sl-color-hairline);
+		border-left: 4px solid var(--sl-color-accent);
+		border-radius: 0.5rem;
+		padding: 1rem 1.25rem;
+		margin-block: 1.5rem;
+		background: var(--sl-color-bg-nav);
+	}
+	.exercise-title {
+		margin-top: 0 !important;
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+	}
+	.exercise-badge {
+		font-size: 0.75rem;
+		font-weight: 600;
+		padding: 0.15rem 0.5rem;
+		border-radius: 999px;
+		background: var(--sl-color-accent);
+		color: var(--sl-color-white);
+	}
+</style>

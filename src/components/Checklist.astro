@@ -1,0 +1,89 @@
+---
+/**
+ * 自檢勾選清單。渲染成自訂元素 <progress-checklist>，每個 checkbox 帶 data-id；
+ * 狀態存 localStorage['cc-training:<id>'] = '1' | '0'，載入時還原，變更時 dispatch 'cc-training:progress'。
+ */
+interface Item {
+	id: string;
+	text: string;
+}
+interface Props {
+	items: Item[];
+}
+const { items } = Astro.props;
+---
+
+<progress-checklist class="checklist">
+	<p class="checklist-heading">自檢（勾選會存在你的瀏覽器）</p>
+	<ul>
+		{
+			items.map((item) => (
+				<li>
+					<label>
+						<input type="checkbox" data-id={item.id} />
+						<span>{item.text}</span>
+					</label>
+				</li>
+			))
+		}
+	</ul>
+</progress-checklist>
+
+<script>
+	const PREFIX = 'cc-training:';
+	class ProgressChecklist extends HTMLElement {
+		connectedCallback() {
+			const boxes = this.querySelectorAll<HTMLInputElement>('input[type="checkbox"][data-id]');
+			boxes.forEach((box) => {
+				const id = box.dataset.id ?? '';
+				try {
+					box.checked = localStorage.getItem(PREFIX + id) === '1';
+				} catch {
+					/* 私密視窗或被封鎖：維持未勾選 */
+				}
+				box.addEventListener('change', () => {
+					try {
+						localStorage.setItem(PREFIX + id, box.checked ? '1' : '0');
+					} catch {
+						/* 寫不進去就只保留畫面狀態 */
+					}
+					document.dispatchEvent(
+						new CustomEvent('cc-training:progress', { detail: { id, checked: box.checked } }),
+					);
+				});
+			});
+		}
+	}
+	if (!customElements.get('progress-checklist')) customElements.define('progress-checklist', ProgressChecklist);
+</script>
+
+<style>
+	.checklist {
+		display: block;
+		margin-block: 1rem;
+		padding: 0.75rem 1rem;
+		border: 1px dashed var(--sl-color-hairline);
+		border-radius: 0.5rem;
+	}
+	.checklist-heading {
+		margin: 0 0 0.5rem;
+		font-weight: 600;
+	}
+	.checklist ul {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+	}
+	.checklist li + li {
+		margin-top: 0.4rem;
+	}
+	.checklist label {
+		display: flex;
+		gap: 0.5rem;
+		align-items: flex-start;
+		cursor: pointer;
+	}
+	.checklist input {
+		margin-top: 0.3rem;
+	}
+</style>

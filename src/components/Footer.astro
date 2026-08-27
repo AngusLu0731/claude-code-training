@@ -1,0 +1,15 @@
+---
+import Default from '@astrojs/starlight/components/Footer.astro';
+import { CLAUDE_CODE_VERSION, VERIFIED_ON } from '../data/version';
+---
+
+<p class="cc-version">以 Claude Code {CLAUDE_CODE_VERSION}（{VERIFIED_ON}）為準</p>
+<Default><slot /></Default>
+
+<style>
+	.cc-version {
+		color: var(--sl-color-gray-3);
+		font-size: var(--sl-text-sm);
+		margin: 0 0 0.5rem;
+	}
+</style>

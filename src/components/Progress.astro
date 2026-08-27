@@ -1,0 +1,49 @@
+---
+/**
+ * 首頁「完成 x/N」。N 在 build 時由各章 mdx 原文經 checklist-ids parser 算出；
+ * 瀏覽器端只計清單內的 id。根元素 data-total 供 e2e 讀。
+ */
+import { collectChecklistIds } from '../lib/checklist-ids';
+
+const raw = import.meta.glob('/src/content/docs/0[1-5]-*.mdx', { query: '?raw', eager: true, import: 'default' });
+const ids = collectChecklistIds(Object.values(raw) as string[]);
+const total = ids.length;
+---
+
+<div class="progress" id="cc-progress" data-total={total} data-ids={ids.join(' ')}>
+	<strong>你的進度</strong>：完成 <span data-done>0</span>/{total} 項自檢
+	<span class="progress-note">（只存在這台電腦的瀏覽器）</span>
+</div>
+
+<script>
+	function refresh() {
+		const root = document.getElementById('cc-progress');
+		if (!root) return;
+		const ids = (root.dataset.ids ?? '').split(' ').filter(Boolean);
+		let done = 0;
+		for (const id of ids) {
+			try {
+				if (localStorage.getItem('cc-training:' + id) === '1') done += 1;
+			} catch {
+				/* 讀不到就當 0 */
+			}
+		}
+		const slot = root.querySelector('[data-done]');
+		if (slot) slot.textContent = String(done);
+	}
+	refresh();
+	document.addEventListener('cc-training:progress', refresh);
+</script>
+
+<style>
+	.progress {
+		padding: 0.75rem 1rem;
+		border-radius: 0.5rem;
+		background: var(--sl-color-bg-nav);
+		border: 1px solid var(--sl-color-hairline);
+	}
+	.progress-note {
+		color: var(--sl-color-gray-3);
+		font-size: 0.85em;
+	}
+</style>
