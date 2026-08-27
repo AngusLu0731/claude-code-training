@@ -19,12 +19,28 @@ const MIN_BODY_CHARS = 80;
 const read = (name: string) => readFileSync(join(DOCS, `${name}.mdx`), 'utf8');
 const stripFrontmatter = (src: string) => src.replace(/^---[\s\S]*?\n---\n/, '');
 
-/** `## 標題` 到下一個 `## ` 之間的正文（不含標題本身）。 */
+/** 把 fenced code block 內容換成等長空白（保留 ``` 標記與換行），讓標題定位不會被 code block 裡的 `## ` 騙到。 */
+function maskFences(src: string): string {
+	let inFence = false;
+	return src
+		.split('\n')
+		.map((line) => {
+			if (/^\s*```/.test(line)) {
+				inFence = !inFence;
+				return line;
+			}
+			return inFence ? ' '.repeat(line.length) : line;
+		})
+		.join('\n');
+}
+
+/** `## 標題` 到下一個 `## ` 之間的正文（不含標題本身）；邊界在遮罩後的原文上找，回傳原文切片。 */
 function sectionBody(src: string, heading: string): string {
-	const start = src.indexOf(`\n${heading}\n`);
+	const masked = maskFences(src);
+	const start = masked.indexOf(`\n${heading}\n`);
 	if (start < 0) return '';
 	const from = start + heading.length + 2;
-	const next = src.indexOf('\n## ', from);
+	const next = masked.indexOf('\n## ', from);
 	return next < 0 ? src.slice(from) : src.slice(from, next);
 }
 
@@ -49,7 +65,7 @@ function exerciseBlocks(src: string): { id: string; title: string; body: string 
 }
 
 const firstCodeBlock = (body: string) => /```[^\n]*\n([\s\S]*?)```/.exec(body)?.[1] ?? '';
-const hasHeading = (src: string, re: RegExp) => src.split('\n').some((line) => /^#{2,4} /.test(line) && re.test(line));
+const hasHeading = (src: string, re: RegExp) => maskFences(src).split('\n').some((line) => /^#{2,4} /.test(line) && re.test(line));
 
 describe('五章骨架', () => {
 	it('五個章節檔都存在', () => {
@@ -62,8 +78,9 @@ describe('五章骨架', () => {
 
 			it('四個標題依序存在', () => {
 				let cursor = -1;
+				const masked = maskFences(src);
 				for (const heading of SECTIONS) {
-					const at = src.indexOf(`\n${heading}\n`, cursor + 1);
+					const at = masked.indexOf(`\n${heading}\n`, cursor + 1);
 					expect(at, `${heading} 應在前一段之後`).toBeGreaterThan(cursor);
 					cursor = at;
 				}
