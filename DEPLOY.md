@@ -45,6 +45,10 @@
 
 7. 找一位有 Claude Code 基礎、沒用過進階功能的同事試讀（只給網址），紀錄他問的每個問題，補進教材後再驗一次。
 
+## Makefile
+
+常用指令都綁在 `make`：`make help` 列全部；`make preview` 本機看、`make check`（test＋e2e）、`make dry-run`；第 5 步可用 `make deploy CONFIRM=yes`（沒加 CONFIRM 只會提示不會動）。
+
 ## 本機驗證（不部署、不登入）
 
 ```bash
