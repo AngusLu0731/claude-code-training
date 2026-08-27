@@ -1,0 +1,181 @@
+---
+title: 第 2 章 workflow 定義
+description: 把自己的流程拆成站，寫成 .claude/workflows/review-flow.js，用 /review-flow 跑完一遍。
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+import Exercise from '../../components/Exercise.astro';
+import Checklist from '../../components/Checklist.astro';
+
+## 用途
+
+Workflow 是一支放在 `.claude/workflows/<name>.js` 的腳本：用 JavaScript 描述「先開幾個 agent 做什麼、等它們回來再做什麼、最後回傳什麼」，Claude Code 在背景照著跑，你的主對話保持可用。
+它解決的是「一件事要開很多 subagent、而且每次做法都一樣」的問題：審一整個目錄、把每個檔案各自遷移、對每個 finding 再派人驗證。這些用對話一步一步指揮既慢又不穩，寫成 workflow 之後就是一個 `/name` 指令，每次跑出來的結構都一樣。
+本章的目標不是背 API，而是學會**把自己的流程拆成站**，再把站寫成腳本。
+
+## 什麼時候用
+
+- **同一套多 agent 流程會重複跑**：每個 MR 都要「平行審兩個檔再彙整」，第二次起就該是 `/review-flow`，不是重新描述。
+- **平行度是重點**：十個檔案各審一次，`parallel()`／`pipeline()` 一次派出去，比對話裡逐一派快得多。
+- **需要確定性的控制流**：「找到 0 個問題就跳過驗證」「兩輪沒有新發現就停」這種 if／while，寫在腳本裡比寫在提示詞裡可靠。
+
+反過來，**一次性的、需要你隨時介入改方向的**工作留在對話裡就好。workflow 跑起來中途不能問你問題（只有權限提示能暫停它），要人簽核的節點，就把流程切成兩支 workflow，中間回對話。
+
+## 基本用法
+
+### 前置檢查
+
+先確認你的環境跑得動 workflow，再往下：
+
+<Steps>
+
+1. `claude --version` 是 2.1.246 或更新。
+2. 若你用的是 **Pro 方案**，在 `claude` 裡打 `/config`，找到 **Dynamic workflows** 那一列，確認是開的。
+3. 在提示符輸入 `/`，清單裡看得到 `/deep-research`——那是內建 workflow，看得到就代表 workflow 功能可用。
+4. 都做了還是沒有？打 `/status`，看 **Setting sources** 有沒有 managed 來源。有的話代表組織關閉了 workflows，這一章改走**閱讀模式**：把本章讀完，看附錄的 `/review-flow` 實跑輸出與 `/workflows` 畫面文字，自檢第 3 項勾「環境不支援，已閱讀」即可。
+
+</Steps>
+
+### 拆站：把流程切成站
+
+寫腳本之前先在紙上拆站。每一站回答四個問題：
+
+| 問題 | 例子（review-flow） |
+| --- | --- |
+| **輸入**是什麼 | Review 站：兩個檔案路徑 |
+| **輸出**是什麼 | Review 站：每個檔一份 findings（檔名、行號、說明） |
+| **誰確認** | Review 站不用人確認；Synthesize 站的摘要由你在主對話看 |
+| **失敗怎麼辦** | 某個 agent 回 null（被中止或 API 出錯）就略過它，摘要照做 |
+
+拆完會發現三種東西：**該進 workflow 的**（重複、平行、不需要人介入的站）、**該留在對話的**（需要你判斷、改方向的部分）、以及**站與站之間的資料形狀**（上一站回什麼、下一站吃什麼）。資料形狀就是你等一下要寫的 `schema`。
+
+### 團隊真實案例（去機密版）
+
+一個團隊把後端開發流程寫成五站：**ROUTE**（判斷任務型態、驗分支）→ **SPEC**（產規格草稿，**硬停**等人在主對話回 OK；workflow 絕不自己把草稿翻成「已確認」）→ **BUILD**（依 spec 分批實作）→ **VERIFY**（跑測試，失敗就進 fix 迴圈，有上限）→ **DONE**（只產 MR 草稿，永不 push）。
+值得學的形狀有三個：每站有明確的 schema；需要人簽核的地方用「停站、回對話、帶參數續跑」而不是在腳本裡問人；有上限的迴圈（fix 最多幾輪）而不是跑到收斂為止。
+
+### 腳本長什麼樣
+
+| 元素 | 作用 |
+| --- | --- |
+| `export const meta = { name, description, phases }` | 必填。`name` 就是之後的 `/name`；`phases` 是進度畫面的分組 |
+| `phase('Review')` | 之後的 `agent()` 都歸在這一組顯示 |
+| `agent(prompt, { label, phase, schema })` | 開一個 subagent。**prompt 要自足**（它看不到主對話）；給 `schema` 就回驗證過的物件，不用自己 parse |
+| `parallel([() => agent(...), () => agent(...)])` | 同時跑、全部回來才繼續；任一個失敗會變 `null`，記得 `.filter(Boolean)` |
+| `pipeline(items, stage1, stage2)` | 每個 item 各自走完所有 stage，不互等；多數多階段工作用這個 |
+| `log('...')` | 在進度畫面印一行給人看 |
+| `return value` | 腳本的回傳值就是 workflow 的結果，會回到你的對話 |
+
+<Aside type="note">
+以 Claude Code 2.1.246 實跑驗證；完整定義見 Agent SDK 的 Workflow tool。腳本是純 JavaScript（不能寫 TypeScript 型別），頂層可以直接 `await`。
+</Aside>
+
+### 兩種叫法，別搞混
+
+- **叫 Claude 幫你寫一份**：在提示詞裡說「use a workflow」或加 `ultracode` 關鍵字，Claude 會**另外寫**一支腳本來做這件事。這是「請它現場設計」，不是跑你存的那支。
+- **跑你自己存的**：檔案放在 `.claude/workflows/review-flow.js`，重開 `claude` 後打 `/review-flow`。這才是本章要練的。
+
+<Aside type="caution" title="不要請 Claude 幫你建這個檔">
+你一說「幫我建一個 workflow 檔」，很容易觸發它現場寫一支即席 workflow 跑起來。請用編輯器或 `cat <<'EOF'` 自己貼；真的誤觸了，按 **Option+W**（Windows／Linux 是 Alt+W）取消。
+</Aside>
+
+## 你來做
+
+<Exercise id="ch2-ex1" title="寫一支 review-flow，用 /review-flow 跑完">
+
+<Steps>
+
+0. **起點**：把 repo 重置回乾淨的 `main`（在 repo 根目錄執行）。
+
+   ```bash
+   git merge --abort 2>/dev/null; git checkout -f main && git reset --hard origin/main && git clean -fd && git worktree prune
+   ```
+
+1. **步驟 0.5**：如果這個目錄還沒接受過信任對話，先 `claude` 接受再 `/exit`。
+
+2. **在終端機（不是 Claude 裡）**貼這個檔案到 `.claude/workflows/review-flow.js`。內容與練習 repo 的 `solutions/ch2-workflow/.claude/workflows/review-flow.js` 完全相同：
+
+   ```bash
+   cat > .claude/workflows/review-flow.js <<'EOF'
+   // review-flow：平行審兩個檔，再把 findings 彙整成一段 zh-TW 摘要。
+   // 放到 .claude/workflows/review-flow.js，/exit 重開 claude 後用 /review-flow 執行。
+   export const meta = {
+     name: 'review-flow',
+     description: '平行審兩個檔再彙整',
+     phases: [{ title: 'Review' }, { title: 'Synthesize' }],
+   }
+
+   // 每個審查 agent 都必須回這個形狀：findings[] 每筆帶 file / line / note
+   const FINDINGS = {
+     type: 'object',
+     required: ['findings'],
+     properties: {
+       findings: {
+         type: 'array',
+         items: {
+           type: 'object',
+           required: ['file', 'line', 'note'],
+           properties: { file: { type: 'string' }, line: { type: 'integer' }, note: { type: 'string' } },
+         },
+       },
+     },
+   }
+
+   // prompt 要自足：subagent 看不到主對話，檔名、要看什麼、回什麼都得寫在這裡
+   const reviewPrompt = (file) =>
+     `你是唯讀的程式碼審查員。用 Read 工具讀取 ${file}，找出可讀性、錯誤處理、測試涵蓋上的問題。` +
+     `每筆都要附行號（line 為整數）。最多 5 筆；沒有問題就回空陣列。不要修改任何檔案。`
+
+   phase('Review')
+   const [todo, tests] = await parallel([
+     () => agent(reviewPrompt('src/todo.py'), { label: 'review:todo', phase: 'Review', schema: FINDINGS }),
+     () => agent(reviewPrompt('tests/test_todo.py'), { label: 'review:tests', phase: 'Review', schema: FINDINGS }),
+   ])
+
+   // agent() 被中止或 API 出錯會回 null，先濾掉再彙整
+   const findings = [todo, tests].filter(Boolean).flatMap((r) => r.findings)
+   log(`Review 完成：共 ${findings.length} 筆 findings`)
+
+   phase('Synthesize')
+   const summary = await agent(
+     '以下是兩個檔案的程式碼審查結果（JSON）。請用繁體中文寫一段 150 字以內的摘要：' +
+       '先講整體狀況，再列最值得先處理的 3 點（每點附 檔名:行號）。不要修改任何檔案，直接回摘要文字。\n\n' +
+       JSON.stringify(findings, null, 2),
+     { label: 'synthesize', phase: 'Synthesize' },
+   )
+
+   return summary
+   EOF
+   ```
+
+3. 建完任何 `.claude/` 檔案都要重開：如果 `claude` 還開著先 `/exit`，然後：
+
+   ```bash
+   claude
+   ```
+
+4. 打 `/review-flow`。第一次會出現核准提示（列出 Review、Synthesize 兩個 phase），選 **Yes, run it**；auto 模式且之前核准過會直接開始。
+
+5. 跑的時候打 `/workflows`，選這一筆按 Enter 看進度。
+
+</Steps>
+
+### 預期看到
+
+- `/review-flow` 送出後，任務面板出現 `review-flow` 的一行進度；`/workflows` 進去看得到 **Review**（兩個 agent：`review:todo`、`review:tests`）與 **Synthesize**（一個 agent）兩組。
+- 跑完後對話裡出現一段繁體中文摘要：先講兩個檔的整體狀況，再列 3 點附 `檔名:行號`。
+- `git status --porcelain` 只有 `?? .claude/workflows/review-flow.js`——workflow 是唯讀審查，沒有改任何檔。
+
+### 附錄：閱讀模式用的實跑輸出
+
+環境不支援 workflow 的人看這裡。下面是同一支 `review-flow.js` 在練習 repo 上實跑一次的結果（無頭模式，2.1.246）：
+
+@@RUNLOG(2)@@
+
+<Checklist items={[
+  { id: 'ch2-ex1-1', text: '.claude/workflows/review-flow.js 貼好、重開 claude 後 /review-flow 叫得到' },
+  { id: 'ch2-ex1-2', text: '/workflows 看到 Review 兩個 agent 與 Synthesize 一個 agent 的進度' },
+  { id: 'ch2-ex1-3', text: '對話裡收到繁體中文摘要（或：環境不支援，已閱讀附錄）' },
+]} />
+
+</Exercise>
