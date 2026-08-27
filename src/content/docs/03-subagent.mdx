@@ -1,0 +1,141 @@
+---
+title: 第 3 章 subagent
+description: 建一個 .claude/agents/reviewer.md，派它審一個檔，拿回附行號的回報。
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+import Exercise from '../../components/Exercise.astro';
+import Checklist from '../../components/Checklist.astro';
+
+## 用途
+
+Subagent 是主對話派出去的另一個 Claude：它有自己的 context、自己的系統提示、自己被允許的工具，做完把結果**摘要**回主對話。
+三個好處：**context 隔離**——讀十個檔案找線索的過程留在 subagent 裡，主對話只收到結論，不會被幾萬 token 的檔案內容淹沒；**平行**——一次派好幾個，各查各的；**專職**——用 `.claude/agents/<name>.md` 把「審查員」「查資料的」寫成固定角色，每次派都是同一套標準。
+本章要你自己寫一個唯讀的審查員，派它審一個檔，並要求它回報附檔名與行號。
+
+## 什麼時候用
+
+- **要讀很多東西、只需要結論**：找某個設定在哪被讀、某個錯誤從哪來。派 subagent 去翻，主對話收結論。
+- **要一套固定標準重複執行**：程式碼審查、安全檢查、文件一致性。寫成 agent 定義，標準就不會每次飄。
+- **要限制它能做什麼**：審查員就該只能讀不能改。`tools: Read, Grep, Glob` 這一行比「請不要改檔案」的提示詞可靠得多。
+
+不該用的情況：改動需要你一路看著、隨時改方向的工作。subagent 回來的是摘要，中間過程你看不到，適合「派出去等結果」，不適合「一起做」。
+
+## 基本用法
+
+### Agent tool 與定義檔
+
+主對話用 **Agent tool** 派 subagent，參數之一是 `subagent_type`，也就是定義檔的 `name`。定義檔放在專案的 `.claude/agents/<name>.md`（只在這個專案可用）或 `~/.claude/agents/<name>.md`（你所有專案都可用），格式是 YAML frontmatter 加 Markdown 正文：
+
+```markdown
+---
+name: reviewer
+description: 唯讀程式碼審查員，回報一律附檔名與行號
+tools: Read, Grep, Glob
+---
+
+正文就是這個 subagent 的系統提示：它是誰、看什麼、怎麼回報。
+```
+
+| 欄位 | 作用 |
+| --- | --- |
+| `name` | 必填，小寫與連字號；就是 `subagent_type` 與 `@agent-<name>` 用的名字 |
+| `description` | 必填，寫「什麼情況該派它」，Claude 據此自動選用 |
+| `tools` | 允許的工具清單；不寫就繼承全部。審查員只給 `Read, Grep, Glob` |
+| `model` | 可選：`sonnet`、`opus`、`haiku` 或 `inherit`（預設） |
+
+### 怎麼叫它
+
+- **點名**：提示詞開頭打 `@agent-reviewer`，後面接任務。輸入 `@` 會出現選單，也可以直接手打。
+- **自然語言**：「用 reviewer subagent 審 src/todo.py」。Claude 看到 description 對得上就會派。
+- **自動**：你沒點名，但任務跟某個 agent 的 description 很像，Claude 也可能自己派。
+
+### 看它在做什麼
+
+派出去之後，對話裡會多一列 subagent 的進度（名字、跑了多久、用了多少 token）。點進去（或在任務面板按下箭頭再 Enter）可以看它讀了哪些檔、回了什麼；主對話收到的是最後那段摘要。
+
+### 團隊真實案例（去機密版）
+
+前一章的五站 workflow 裡，每一站其實就是一個 subagent：ROUTE 站只讀不改、VERIFY 站只准跑測試與改測試指出的檔。把「這站能碰什麼」寫進定義檔的 `tools`，比在 prompt 裡拜託它可靠——這也是本章審查員只給讀取工具的理由。
+
+## 你來做
+
+<Exercise id="ch3-ex1" title="建 reviewer.md，派它審 src/todo.py">
+
+<Steps>
+
+0. **起點**：把 repo 重置回乾淨的 `main`（在 repo 根目錄執行）。
+
+   ```bash
+   git merge --abort 2>/dev/null; git checkout -f main && git reset --hard origin/main && git clean -fd && git worktree prune
+   ```
+
+1. **步驟 0.5**：如果這個目錄還沒接受過信任對話，先 `claude` 接受再 `/exit`。
+
+2. **在終端機（不是 Claude 裡）**貼這個檔案到 `.claude/agents/reviewer.md`（與練習 repo 的 `solutions/ch3-subagent/.claude/agents/reviewer.md` 相同）：
+
+   ```bash
+   cat > .claude/agents/reviewer.md <<'EOF'
+   ---
+   name: reviewer
+   description: 唯讀程式碼審查員，回報一律附檔名與行號
+   tools: Read, Grep, Glob
+   ---
+
+   你是唯讀的程式碼審查員。你只能讀檔、搜尋，不能修改任何檔案，也不能執行指令。
+
+   ## 審查重點
+
+   1. 可讀性：命名、函式長度、重複的邏輯
+   2. 錯誤處理：例外被靜默吞掉、錯誤訊息不清楚、邊界條件（空輸入、超出範圍）
+   3. 測試涵蓋：明顯沒被測到的分支
+   4. 只報你在檔案裡實際看到的問題，不要猜測檔案以外的東西
+
+   ## 回報格式
+
+   每一筆一行，固定寫成：
+
+   ```
+   檔名:行號 — 建議
+   ```
+
+   例如 `src/todo.py:42 — 這裡的例外沒有記錄原因，建議至少印到 stderr`。
+   最後用一句話總結整體狀況。沒有問題就直接說「沒有發現需要處理的問題」。
+   EOF
+   ```
+
+3. 建完任何 `.claude/` 檔案都要重開：`claude` 還開著先 `/exit`，然後：
+
+   ```bash
+   claude
+   ```
+
+4. 點名派它：
+
+   ```text
+   @agent-reviewer 審 src/todo.py
+   ```
+
+   備用寫法（`@` 選單沒出現時）：
+
+   ```text
+   用 reviewer subagent 審 src/todo.py，回報要含行號
+   ```
+
+</Steps>
+
+### 預期看到
+
+- 對話裡出現一列 **reviewer** 的 subagent 進度（不是主對話自己讀檔）；展開能看到它用 Read 讀了 `src/todo.py`。
+- 回報是幾行 `src/todo.py:<行號> — 建議` 形式的條目，最後一句總結。行號要對得上你打開檔案看到的位置。
+- `git status --porcelain` 只有 `?? .claude/agents/reviewer.md`——它只有讀取工具，改不了任何檔。
+
+@@RUNLOG(3)@@
+
+<Checklist items={[
+  { id: 'ch3-ex1-1', text: '.claude/agents/reviewer.md 貼好、重開後 @agent-reviewer 選得到' },
+  { id: 'ch3-ex1-2', text: '對話裡看到 reviewer 這個 subagent 的進度列，而不是主對話自己讀檔' },
+  { id: 'ch3-ex1-3', text: '回報每一筆都有 src/todo.py:行號，且 git status 沒有任何檔被改' },
+]} />
+
+</Exercise>
