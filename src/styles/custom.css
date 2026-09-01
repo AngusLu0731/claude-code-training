@@ -1,0 +1,167 @@
+/**
+ * 站台主題：暖陶土色 accent（terminal 感的教材站）、中文字型堆疊、
+ * 首頁 hero 與章節卡片、概念圖（.cc-diagram）外框。
+ * Starlight 慣例：:root 是暗色主題，:root[data-theme='light'] 是亮色主題。
+ */
+
+/* ── 配色 ─────────────────────────────────────────── */
+:root {
+	--sl-color-accent-low: #3d2115;
+	--sl-color-accent: #e07b53;
+	--sl-color-accent-high: #f4c5ab;
+}
+:root[data-theme='light'] {
+	--sl-color-accent-low: #f6e2d8;
+	--sl-color-accent: #b0522c;
+	--sl-color-accent-high: #67300f;
+}
+
+/* ── 字型 ─────────────────────────────────────────── */
+:root {
+	--sl-font:
+		ui-sans-serif, system-ui, 'PingFang TC', 'Heiti TC', 'Microsoft JhengHei',
+		'Noto Sans TC', sans-serif;
+}
+
+/* 內文標題略收斂字距，中文粗體更挺 */
+.sl-markdown-content h2 {
+	letter-spacing: 0.01em;
+}
+
+/* 左右欄同寬：Starlight 預設右欄會吸收剩餘空間（1440px 時左 300、右 360），改為固定同寬 */
+@media (min-width: 72rem) {
+	.right-sidebar-container {
+		width: var(--sl-sidebar-width);
+	}
+}
+
+/* ── 首頁 hero ────────────────────────────────────── */
+.home-hero {
+	margin-top: 0.5rem;
+	padding: 1.5rem 1.5rem 1.75rem;
+	border-radius: 1rem;
+	border: 1px solid var(--sl-color-hairline);
+	background:
+		radial-gradient(ellipse 80% 120% at 85% -20%, var(--sl-color-accent-low), transparent 70%),
+		var(--sl-color-bg-nav);
+}
+.home-tagline {
+	margin: 0;
+	font-size: var(--sl-text-lg);
+	color: var(--sl-color-white);
+}
+.home-tagline .home-topics {
+	display: block;
+	margin-top: 0.5rem;
+	font-size: var(--sl-text-sm);
+	color: var(--sl-color-gray-3);
+	font-family: var(--sl-font-mono);
+}
+.home-actions {
+	margin-top: 1.25rem;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.75rem;
+}
+.home-cta,
+.home-cta:visited {
+	display: inline-block;
+	padding: 0.55rem 1.2rem;
+	border-radius: 999px;
+	background: var(--sl-color-accent);
+	color: var(--sl-color-black);
+	font-weight: 600;
+	text-decoration: none;
+	transition: transform 0.15s ease;
+}
+.home-cta.secondary,
+.home-cta.secondary:visited {
+	background: transparent;
+	border: 1px solid var(--sl-color-accent);
+	color: var(--sl-color-accent-high);
+}
+.home-cta:hover {
+	transform: translateY(-2px);
+}
+
+/* ── 首頁章節卡片 ─────────────────────────────────── */
+.chapter-cards {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+	gap: 0.75rem;
+}
+.chapter-card,
+.chapter-card:visited {
+	display: block;
+	padding: 1rem 1.1rem;
+	border: 1px solid var(--sl-color-hairline);
+	border-radius: 0.75rem;
+	background: var(--sl-color-bg-nav);
+	text-decoration: none;
+	color: inherit;
+	transition: transform 0.15s ease, border-color 0.15s ease;
+}
+.chapter-card:hover {
+	transform: translateY(-3px);
+	border-color: var(--sl-color-accent);
+}
+.chapter-num {
+	display: inline-block;
+	font-family: var(--sl-font-mono);
+	font-weight: 700;
+	font-size: var(--sl-text-sm);
+	color: var(--sl-color-accent-high);
+	border: 1px solid var(--sl-color-accent);
+	border-radius: 0.4rem;
+	padding: 0.05rem 0.45rem;
+}
+.chapter-name {
+	display: block;
+	margin-top: 0.55rem;
+	font-weight: 700;
+	font-size: var(--sl-text-base);
+	color: var(--sl-color-white);
+}
+.chapter-desc {
+	display: block;
+	margin-top: 0.35rem;
+	font-size: var(--sl-text-sm);
+	color: var(--sl-color-gray-3);
+	line-height: 1.6;
+}
+
+/* ── 概念圖 ───────────────────────────────────────── */
+.cc-diagram {
+	margin: 1.25rem 0;
+	padding: 1rem 1rem 0.75rem;
+	border: 1px solid var(--sl-color-hairline);
+	border-radius: 0.75rem;
+	background: var(--sl-color-bg-sidebar, var(--sl-color-bg-nav));
+}
+.cc-diagram {
+	overflow-x: auto;
+}
+.cc-diagram svg {
+	display: block;
+	width: 100%;
+	min-width: 34rem; /* 窄螢幕改橫向捲動，維持圖內文字可讀 */
+	height: auto;
+}
+.cc-diagram figcaption {
+	margin-top: 0.6rem;
+	text-align: center;
+	font-size: var(--sl-text-sm);
+	color: var(--sl-color-gray-3);
+}
+
+/* ── 一句話（每章開頭的 eli5 摘要）──────────────────── */
+.one-liner {
+	margin: 0 0 1rem;
+	padding: 0.75rem 1rem;
+	border-inline-start: 4px solid var(--sl-color-accent);
+	border-radius: 0 0.5rem 0.5rem 0;
+	background: var(--sl-color-accent-low);
+	font-size: var(--sl-text-lg);
+	font-weight: 600;
+	color: var(--sl-color-white);
+}

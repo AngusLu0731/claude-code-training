@@ -1,0 +1,77 @@
+---
+/** 第 5 章原理圖：同一個目錄開兩個 session，為什麼會互相蓋檔（時間線反例）。 */
+---
+
+<figure class="cc-diagram">
+	<svg viewBox="0 0 720 250" role="img" aria-label="時間線：session A 先讀後寫 todo.py，session B 讀到的是舊版、之後寫入時把 A 的改動蓋掉">
+		<defs>
+			<marker id="cl-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+				<path d="M 0 0 L 10 5 L 0 10 z" class="arrow-head"></path>
+			</marker>
+		</defs>
+
+		<line class="rail" x1="120" y1="210" x2="700" y2="210" marker-end="url(#cl-arrow)"></line>
+		<text class="hint" x="700" y="238" text-anchor="end">時間 →</text>
+
+		<text class="lane-label" x="16" y="66">session A</text>
+		<text class="lane-label" x="16" y="146">session B</text>
+
+		<rect class="event" x="140" y="40" width="150" height="44" rx="8"></rect>
+		<text class="event-text" x="215" y="67" text-anchor="middle">讀 todo.py</text>
+
+		<rect class="event ok" x="360" y="40" width="170" height="44" rx="8"></rect>
+		<text class="event-text" x="445" y="60" text-anchor="middle">寫入：加了 --json</text>
+		<text class="event-sub" x="445" y="78" text-anchor="middle">此刻檔案是 A 的版本</text>
+
+		<rect class="event" x="230" y="120" width="170" height="44" rx="8"></rect>
+		<text class="event-text" x="315" y="140" text-anchor="middle">讀 todo.py</text>
+		<text class="event-sub" x="315" y="158" text-anchor="middle">讀到的還是舊版</text>
+
+		<rect class="event no" x="520" y="120" width="180" height="44" rx="8"></rect>
+		<text class="event-text" x="610" y="140" text-anchor="middle">寫入自己的版本</text>
+		<text class="event-sub strong" x="610" y="158" text-anchor="middle">A 的 --json 消失了</text>
+	</svg>
+	<figcaption>兩個 session 看著同一份檔案：後寫的人永遠贏，先寫的人的改動就默默消失——而且 git 也分不出是誰改的。</figcaption>
+</figure>
+
+<style>
+	.rail {
+		stroke: var(--sl-color-gray-4);
+		stroke-width: 1.5;
+	}
+	.lane-label {
+		fill: var(--sl-color-white);
+		font-size: 15px;
+		font-weight: 600;
+	}
+	.event {
+		fill: var(--sl-color-bg-nav);
+		stroke: var(--sl-color-gray-4);
+		stroke-width: 1.5;
+	}
+	.event.ok {
+		stroke: var(--sl-color-green);
+	}
+	.event.no {
+		stroke: var(--sl-color-red);
+	}
+	.event-text {
+		fill: var(--sl-color-white);
+		font-size: 14px;
+	}
+	.event-sub {
+		fill: var(--sl-color-gray-3);
+		font-size: 12.5px;
+	}
+	.event-sub.strong {
+		fill: var(--sl-color-red);
+		font-weight: 600;
+	}
+	.hint {
+		fill: var(--sl-color-gray-3);
+		font-size: 13px;
+	}
+	.arrow-head {
+		fill: var(--sl-color-gray-4);
+	}
+</style>

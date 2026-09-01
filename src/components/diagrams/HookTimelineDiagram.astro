@@ -1,0 +1,93 @@
+---
+/** 第 4 章原理圖：一次工具呼叫的時間線——PreToolUse 閘門卡在「決定」與「執行」之間。 */
+---
+
+<figure class="cc-diagram">
+	<svg viewBox="0 0 780 230" role="img" aria-label="時間線：你送出提示詞、Claude 決定用 Edit、PreToolUse 閘門判斷、exit 0 才會執行工具；exit 2 則擋下並把理由送回給 Claude">
+		<defs>
+			<marker id="ht-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+				<path d="M 0 0 L 10 5 L 0 10 z" class="arrow-head"></path>
+			</marker>
+			<marker id="ht-arrow-no" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+				<path d="M 0 0 L 10 5 L 0 10 z" class="arrow-head no"></path>
+			</marker>
+		</defs>
+
+		<line class="rail" x1="30" y1="100" x2="750" y2="100"></line>
+
+		<rect class="node" x="30" y="72" width="120" height="56" rx="10"></rect>
+		<text class="node-text" x="90" y="96" text-anchor="middle">你送出</text>
+		<text class="node-text" x="90" y="116" text-anchor="middle">提示詞</text>
+
+		<rect class="node" x="190" y="72" width="130" height="56" rx="10"></rect>
+		<text class="node-text" x="255" y="96" text-anchor="middle">Claude 決定</text>
+		<text class="node-text" x="255" y="116" text-anchor="middle">要用 Edit</text>
+
+		<rect class="node gate" x="360" y="64" width="150" height="72" rx="10"></rect>
+		<text class="node-text strong" x="435" y="92" text-anchor="middle">PreToolUse 閘門</text>
+		<text class="node-sub mono" x="435" y="114" text-anchor="middle">spec_gate.py</text>
+
+		<rect class="node" x="550" y="72" width="90" height="56" rx="10"></rect>
+		<text class="node-text" x="595" y="104" text-anchor="middle">Edit 執行</text>
+
+		<rect class="node" x="672" y="72" width="96" height="56" rx="10"></rect>
+		<text class="node-text" x="720" y="96" text-anchor="middle">PostToolUse</text>
+		<text class="node-sub" x="720" y="116" text-anchor="middle">（執行後）</text>
+
+		<text class="ok-label" x="530" y="58" text-anchor="middle">exit 0 放行</text>
+
+		<path class="block-path" d="M 420 140 C 400 190, 300 190, 268 136" marker-end="url(#ht-arrow-no)" fill="none"></path>
+		<text class="no-label" x="344" y="196" text-anchor="middle">exit 2 擋下：Edit 不會執行，stderr 的理由回給 Claude</text>
+	</svg>
+	<figcaption>閘門卡在「決定用工具」與「工具真正執行」之間——exit 2 的話，工具根本不會跑。</figcaption>
+</figure>
+
+<style>
+	.rail {
+		stroke: var(--sl-color-gray-4);
+		stroke-width: 1.5;
+	}
+	.node {
+		fill: var(--sl-color-bg-nav);
+		stroke: var(--sl-color-gray-4);
+		stroke-width: 1.5;
+	}
+	.node.gate {
+		stroke: var(--sl-color-accent);
+		stroke-width: 2;
+	}
+	.node-text {
+		fill: var(--sl-color-white);
+		font-size: 14px;
+	}
+	.node-text.strong {
+		font-weight: 700;
+	}
+	.node-sub {
+		fill: var(--sl-color-gray-3);
+		font-size: 12.5px;
+	}
+	.node-sub.mono {
+		font-family: var(--sl-font-mono, monospace);
+	}
+	.ok-label {
+		fill: var(--sl-color-green);
+		font-size: 13px;
+		font-weight: 600;
+	}
+	.block-path {
+		stroke: var(--sl-color-red);
+		stroke-width: 2;
+		stroke-dasharray: 6 5;
+	}
+	.no-label {
+		fill: var(--sl-color-red);
+		font-size: 13px;
+	}
+	.arrow-head {
+		fill: var(--sl-color-accent);
+	}
+	.arrow-head.no {
+		fill: var(--sl-color-red);
+	}
+</style>

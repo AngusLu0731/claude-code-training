@@ -8,7 +8,7 @@ const { id, title } = Astro.props;
 ---
 
 <section class="exercise" id={id} data-exercise={id}>
-	<h3 class="exercise-title"><span class="exercise-badge">你來做</span>{title}</h3>
+	<h3 class="exercise-title"><span class="exercise-badge">練習</span>{title}</h3>
 	<slot />
 </section>
 
@@ -33,6 +33,6 @@ const { id, title } = Astro.props;
 		padding: 0.15rem 0.5rem;
 		border-radius: 999px;
 		background: var(--sl-color-accent);
-		color: var(--sl-color-white);
+		color: var(--sl-color-black);
 	}
 </style>

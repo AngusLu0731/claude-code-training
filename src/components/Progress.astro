@@ -11,8 +11,13 @@ const total = ids.length;
 ---
 
 <div class="progress" id="cc-progress" data-total={total} data-ids={ids.join(' ')}>
-	<strong>你的進度</strong>：完成 <span data-done>0</span>/{total} 項自檢
-	<span class="progress-note">（只存在這台電腦的瀏覽器）</span>
+	<p class="progress-line">
+		<strong>你的進度</strong>：完成 <span data-done>0</span>/<span data-total-count>{total}</span> 項自檢
+		<span class="progress-note">（只存在這台電腦的瀏覽器）</span>
+	</p>
+	<div class="progress-track" role="presentation">
+		<div class="progress-fill" data-fill></div>
+	</div>
 </div>
 
 <script>
@@ -30,6 +35,8 @@ const total = ids.length;
 		}
 		const slot = root.querySelector('[data-done]');
 		if (slot) slot.textContent = String(done);
+		const fill = root.querySelector<HTMLElement>('[data-fill]');
+		if (fill) fill.style.width = ids.length ? `${(done / ids.length) * 100}%` : '0%';
 	}
 	refresh();
 	document.addEventListener('cc-training:progress', refresh);
@@ -38,12 +45,29 @@ const total = ids.length;
 <style>
 	.progress {
 		padding: 0.75rem 1rem;
-		border-radius: 0.5rem;
+		border-radius: 0.75rem;
 		background: var(--sl-color-bg-nav);
 		border: 1px solid var(--sl-color-hairline);
+	}
+	.progress-line {
+		margin: 0;
 	}
 	.progress-note {
 		color: var(--sl-color-gray-3);
 		font-size: 0.85em;
+	}
+	.progress-track {
+		margin-top: 0.6rem;
+		height: 0.5rem;
+		border-radius: 999px;
+		background: var(--sl-color-hairline);
+		overflow: hidden;
+	}
+	.progress-fill {
+		height: 100%;
+		width: 0;
+		border-radius: 999px;
+		background: var(--sl-color-accent);
+		transition: width 0.3s ease;
 	}
 </style>

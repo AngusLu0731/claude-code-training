@@ -1,0 +1,19 @@
+---
+/** 四章共用的重置指令說明；抽成元件避免四份文字各自漂移。 */
+---
+
+<p class="reset-note">
+	白話：這段＝把 repo 恢復成剛 clone 完的乾淨狀態。它會丟掉未 commit 的改動與未追蹤檔（含你自己貼進
+	<code>.claude/</code> 的檔案），但<strong>不會</strong>動被 gitignore 的
+	<code>.todo.json</code>（只影響 <code>list</code> 顯示的項目，想清就 <code>rm -f .todo.json</code>）與
+	<code>.claude/settings.local.json</code>（存的是你核准過的權限，留著沒關係）。
+</p>
+
+<style>
+	.reset-note {
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-2);
+		border-inline-start: 3px solid var(--sl-color-hairline);
+		padding-inline-start: 0.75rem;
+	}
+</style>

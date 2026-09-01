@@ -1,0 +1,237 @@
+---
+title: 第 5 章 多 session 多工
+description: 用 --worktree 讓多個 Claude Code session 各做各的，最後在主 checkout 收斂。
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+import Exercise from '../../components/Exercise.astro';
+import Checklist from '../../components/Checklist.astro';
+import ResetNote from '../../components/ResetNote.astro';
+import WorktreeDiagram from '../../components/diagrams/WorktreeDiagram.astro';
+import ClashTimelineDiagram from '../../components/diagrams/ClashTimelineDiagram.astro';
+import TermDemo from '../../components/TermDemo.astro';
+
+## 用途
+
+<p class="one-liner">一句話：一件事開一個 session、一張自己的桌子，做完把成果搬回主桌。</p>
+
+<WorktreeDiagram />
+
+一個 Claude Code session 就是一段獨立的對話加一個工作目錄。把兩件不相干的事塞進同一個 session，會發生兩件壞事：
+
+- **互相污染**：前一件事的檔案、討論、決定全都留在對話裡（第 2 章講過的 context 成本），第二件事的品質跟著下滑。
+- **互相排隊**：第二件事要等第一件做完才能開始。
+
+多 session 多工就是「一件事一個 session」，讓它們**同時**進行。難點不在開很多視窗，而在**不要互相踩檔**。
+`claude --worktree` 解決踩檔：它用 git worktree 幫每個 session 開一份**獨立的目錄影本**與分支，各做各的，最後由你在主 checkout（你平常工作的那份目錄）把成果 merge 回來——這一章就在練這件事。
+
+### 原理：為什麼同一個目錄會互相蓋檔
+
+<ClashTimelineDiagram />
+
+蓋檔不是 Claude 的 bug，是「兩個人看著同一份檔案」的必然結果。上圖的時間線：A 先寫入了加好 `--json` 的版本；但 B 手上拿的還是更早讀到的**舊版**，等 B 寫入時，就把 A 的成果整段蓋掉——B 不知道 A 改過，git 也只看到「檔案被改了」，分不出是誰的手筆。
+
+worktree 的解法是**讓兩個人根本不看同一份檔案**。開兩個 worktree 之後，目錄長這樣：
+
+```text
+claude-code-practice/            ← 主 checkout（main 分支）
+├── src/todo.py
+└── .claude/worktrees/
+    ├── a/                       ← session A 的影本（worktree-a 分支）
+    │   └── src/todo.py
+    └── b/                       ← session B 的影本（worktree-b 分支）
+        └── src/todo.py
+```
+
+三份 `todo.py` 各自獨立，A、B 怎麼寫都不會碰到彼此；每份影本各在自己的分支上 commit，最後由你回主 checkout 用 merge 把兩條分支的成果**有紀錄地**合起來——衝突了 git 會告訴你，而不是默默消失。
+
+## 什麼時候用
+
+### 情境 A：兩件互不相干的任務
+
+要加一個 CLI 選項、同時要補 README 的使用範例。兩件事碰的檔案完全不重疊，一個 session 做完再做另一個純粹是在排隊。開兩個 worktree session，各自派一件，時間直接砍半。
+
+### 情境 B：一邊跑長任務、一邊改別的
+
+一個 session 正在跑一個要十幾分鐘的重構或測試修復，你不想在旁邊乾等。開第二個 worktree session 處理另一件小事，長任務那邊不會被你的新提示詞打斷，也不會看到你正在改的檔。
+
+### 情境 C：一個 session 看 log、一個改 code
+
+排查問題時，一個 session 專門讀 log、整理線索、給你結論；另一個 session 拿著結論改 code。兩邊的 context 各自乾淨：讀 log 的那個不會被程式碼的討論淹沒，改 code 的那個也不用背著幾萬 token 的 log。
+
+### 情境 D：一個寫、一個審（Writer／Reviewer）
+
+session A 實作一個功能；開 session B（乾淨的 context）請它審 A 的產出——B 沒看過 A 的實作過程，不會替那些決定護短，審起來更像另一位工程師。把 B 的回饋貼回 A 修。測試也能這樣玩：一個 session 寫測試、另一個 session 寫實作去通過它。這是第 2 章「對抗式審查」的 session 版，隔離更徹底。
+
+### 反例：同一個 checkout 開兩個 session 改同一批檔
+
+在**同一個目錄**開兩個 `claude`，各自要求改 `src/todo.py`。兩個 session 看到的是同一份檔案，A 剛寫進去的內容 B 下一秒就覆蓋掉，`git status` 也分不出誰改了什麼。這不是多工，是互相破壞（見「原理」的時間線）。真的要動同一批檔，就排隊，或先拆成不重疊的工作。
+
+<Aside type="note" title="跟 /clear 的分工">
+不相干的任務**先後**做，用 `/clear` 把 context 歸零就夠了；多 session 解決的是要**同時**做、或想保留兩邊各自脈絡的情況。官方把「一個 session 裡混做好幾件事」列為最常見的失誤之一——先 /clear，再考慮開第二個 session。
+</Aside>
+
+## 基本用法
+
+### 開一個 worktree session
+
+```bash
+claude --worktree <name>
+```
+
+Claude Code 會在 repo 根目錄下建 `.claude/worktrees/<name>/`（一份獨立的工作目錄），並開一條新分支 `worktree-<name>`，然後在那個目錄裡啟動 session。`-w` 是同一件事的縮寫。
+同名再開一次，會直接進既有的 worktree。它預設從 repo 的預設分支（通常是 `main`）長出來，所以每個 worktree 的起點都是乾淨的。
+
+### 一個 session 一件事
+
+給每個 session 的提示詞要**自足**：做什麼、只准碰哪些檔、做完要 commit 還是不要。session 之間看不到彼此的對話，所以「不要動 README」這種邊界一定要寫進提示詞，不能靠它自己猜。
+
+### 收斂：摘要＋回主 checkout merge
+
+每個 session 收尾時請它用一句話摘要做了什麼、commit 了哪些檔。然後你回**主 checkout**（不是任何一個 worktree）做 merge：
+
+```bash
+git merge --no-ff worktree-a
+git merge --no-ff worktree-b
+```
+
+`--no-ff` 讓每個 session 的成果在 `git log --graph` 上各自成一個 merge 節點，事後看得出來哪批改動來自誰。
+
+### `/exit` 時的 keep／remove
+
+在 worktree session 打 `/exit`，如果裡面有改動，Claude Code 會問要 **keep** 還是 **remove**：
+
+- **keep**：保留目錄與分支，之後 `claude --worktree <同名>` 可以回來繼續。
+- **remove**：刪掉目錄與分支，**裡面沒 merge 出去的改動一起消失**。
+
+規則很簡單：已經 merge 回主 checkout 的選 remove；還沒的選 keep。
+
+### 實務案例：長流程與小修並行
+
+一個團隊的後端開發流程被寫成一條五站的 workflow（第 3 章實務案例那條：ROUTE → SPEC → BUILD → VERIFY → DONE），SPEC 站硬停等人確認才往下走。這種長流程一跑就是幾十分鐘，工程師的做法是：主 checkout 留給自己看 diff 與回答 SPEC 站的問題，另外開一個 `--worktree` session 處理不相干的小修——長流程不受打擾，小修也不用等。
+
+### 進階選做：無頭模式的批次 fan-out
+
+平行的極端形態是不開互動介面：`claude -p "提示詞"` 直接跑完就退出。大批的機械式改動（幾百個檔案的遷移、逐檔加型別）可以用迴圈發出去：
+
+```bash
+for f in $(cat files.txt); do
+  claude -p "把 $f 從 Python 2 遷移到 Python 3，完成回 OK、失敗回 FAIL" \
+    --allowedTools "Edit,Bash(git commit *)"
+done
+```
+
+`--allowedTools` 限住它能用的工具——無人看管時這很重要。訣竅是**先拿兩三個檔試跑**、照失敗情況改提示詞，再跑全部。細節見官方 [headless 文件](https://code.claude.com/docs/en/headless)。
+
+## 你來做
+
+<Exercise id="ch5-ex1" title="兩個 worktree 分工，第三個終端機收斂">
+
+<Steps>
+
+1. **起點**：第一次做就 clone；已經 clone 過、或要重做這一章，用第二段把前一次留下的 worktree、分支與 merge 結果清掉。
+
+   ```bash
+   git clone https://github.com/AngusLu0731/claude-code-practice.git
+   cd claude-code-practice
+   ```
+
+   已 clone／重跑（在 repo 根目錄執行；只動 `a`、`b` 這兩個 worktree 與同名分支，不碰你另外開的 worktree；可以重複跑）：
+
+   ```bash
+   for n in a b; do
+     git worktree remove --force ".claude/worktrees/$n" 2>/dev/null
+     git branch -D "worktree-$n" 2>/dev/null
+   done
+   git merge --abort 2>/dev/null
+   git checkout -f main && git reset --hard origin/main
+   git clean -fd && git worktree prune
+   ```
+
+   <ResetNote />
+
+2. **信任資料夾**：第一次在這個目錄開 `claude`，接受信任對話後 `/exit`。已經做過就跳過。
+
+   ```bash
+   claude
+   ```
+
+3. **終端機 A**：開 worktree `a`，整段貼這個提示詞。
+
+   ```bash
+   claude --worktree a
+   ```
+
+   ```text
+   只改 src/todo.py 與 tests/test_todo.py：list 加 --json 輸出（印出 JSON 陣列，每筆含 text 與 done）並補測試，不要動 README，做完只 commit 不要 push
+   ```
+
+4. **終端機 B**：再開一個終端機，`cd` 到同一個 repo，開 worktree `b`，整段貼這個提示詞。
+
+   ```bash
+   claude --worktree b
+   ```
+
+   ```text
+   只改 README.md 加三個使用範例，不要動 src/ 與 tests/，做完只 commit 不要 push
+   ```
+
+5. **終端機 C（主 checkout）**：等 A、B 都回報「已 commit」，再開第三個終端機，在 repo 根目錄（不是 `.claude/worktrees/` 底下）收斂：
+
+   ```bash
+   git merge --no-ff worktree-a && git merge --no-ff worktree-b && python3 -m unittest -v
+   ```
+
+6. 回終端機 A、B 各打 `/exit`。它會問 keep／remove，選 **remove**——成果已經 merge 進 `main`，刪掉是安全的。
+
+7. 在主 checkout 確認乾淨——選 remove 時 Claude Code 已經連分支一起刪了，**不用**再 `git branch -d`：
+
+   ```bash
+   git worktree prune && git worktree list && git branch
+   ```
+
+   如果剛才選的是 **keep**，目錄與分支都還在，要自己收：`git worktree remove .claude/worktrees/a && git branch -d worktree-a`（`b` 同理）。
+
+</Steps>
+
+### 預期看到
+
+<TermDemo title="終端機 C — 收斂" lines={[
+	{ text: 'git merge --no-ff worktree-a && git merge --no-ff worktree-b && python3 -m unittest -v', kind: 'cmd' },
+	{ text: "Merge made by the 'ort' strategy.", kind: 'out' },
+	{ text: '……', kind: 'dim' },
+	{ text: 'Ran 17 tests in 0.312s', kind: 'out' },
+	{ text: 'OK', kind: 'ok' },
+	{ text: 'git log --oneline --graph', kind: 'cmd' },
+	{ text: "*   f3a2c19 Merge branch 'worktree-b'", kind: 'out' },
+	{ text: '|\\', kind: 'out' },
+	{ text: '| * 9d1e042 docs: README 加三個使用範例', kind: 'out' },
+	{ text: "* |   8c47b31 Merge branch 'worktree-a'", kind: 'out' },
+	{ text: '……', kind: 'dim' },
+]}>
+兩個 merge 節點＋17 個測試 OK＝這一章的完成證明。hash 與測試秒數每次不同。
+</TermDemo>
+
+- 步驟 5 的 merge 沒有衝突；`python3 -m unittest -v` 最後幾行是 `Ran 17 tests`（或更多——`main` 本來有 16 個，A 每補一個測試就加一）與 `OK`。看到 `OK (skipped=1)` 也算過：那是比對教材站原始碼的測試，單獨 clone 練習 repo 時會跳過。
+- `git log --oneline --graph` 最上面有**兩個 merge 節點**（`Merge branch 'worktree-a'`、`Merge branch 'worktree-b'`）。
+- `python3 src/todo.py list --json` 印出 JSON（空清單就是 `[]`）。
+- 步驟 7 之後 `git worktree list` 只剩主 checkout一行，`git branch` 沒有 `worktree-a`、`worktree-b`。
+
+### 故障排除
+
+- **merge 衝突**：`git merge --abort`，回那個 session 說「只改指定檔案，重做一次」，它多半是動到了不該動的檔。
+- **remove 顯示 locked**：`git worktree unlock .claude/worktrees/<name>` 再 remove 一次。
+- **B 動了 src/**：提示詞邊界沒寫清楚，這是本章要你學到的事——把「不要動 src/ 與 tests/」寫進去再來一次。
+- **A 或 B 的 session 中途關掉、還沒 commit**：再打一次 `claude --worktree a`（或 `b`）會直接回到同一個 worktree，跟它說「繼續，做完只 commit 不要 push」。
+- **merge 做到一半失敗**：`git merge --abort` 回到 merge 前的狀態；兩個 worktree 與分支都還在，修好再做一次步驟 5。
+- **`claude --worktree a` 說目錄已存在**：那是前一次留下的。想接著做就直接進去；想從乾淨起點重做，先跑步驟 1 的「已 clone／重跑」那一段。
+- **想整章重做**：步驟 1 的「已 clone／重跑」那一段就是為此準備的，它只清 `a`、`b` 與 `main` 上的練習結果。
+
+<Checklist items={[
+  { id: 'ch5-ex1-1', text: '兩個 worktree session 同時在跑，各自只碰自己被分派的檔案' },
+  { id: 'ch5-ex1-2', text: '主 checkout 兩次 merge 都沒衝突，git log --graph 有兩個 merge 節點' },
+  { id: 'ch5-ex1-3', text: 'python3 -m unittest -v 顯示 OK，list --json 有輸出' },
+  { id: 'ch5-ex1-4', text: '/exit 選 remove、prune 後 git worktree list 只剩主 checkout' },
+]} />
+
+</Exercise>

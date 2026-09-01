@@ -1,0 +1,107 @@
+---
+/**
+ * 「預期看到」的終端機示意圖：固定深色外框＋分類上色的行。
+ * lines 的 kind：cmd（你輸入的，帶 ❯）、out（一般輸出）、dim（工具列／UI 列）、
+ * ok（綠）、err（紅）、hl（accent 強調）。示意重點行，不是逐字截圖。
+ */
+interface Line {
+	text: string;
+	kind?: 'cmd' | 'out' | 'dim' | 'ok' | 'err' | 'hl';
+}
+interface Props {
+	title?: string;
+	lines: Line[];
+}
+const { title = 'terminal', lines } = Astro.props;
+---
+
+<figure class="term-demo">
+	<div class="term-bar" aria-hidden="true">
+		<span class="term-dot"></span><span class="term-dot"></span><span class="term-dot"></span>
+		<span class="term-title">{title}</span>
+	</div>
+	<pre class="term-body">{lines.map((line) => (
+		<span class={`term-line ${line.kind ?? 'out'}`}>{line.kind === 'cmd' ? '❯ ' : ''}{line.text}
+</span>
+	))}</pre>
+	<figcaption class="term-caption"><span class="term-tag">示意圖</span><slot /></figcaption>
+</figure>
+
+<style>
+	.term-demo {
+		margin: 1.25rem 0;
+	}
+	.term-bar {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		padding: 0.5rem 0.75rem;
+		background: #1c2128;
+		border: 1px solid #30363d;
+		border-bottom: none;
+		border-radius: 0.6rem 0.6rem 0 0;
+	}
+	.term-dot {
+		width: 0.65rem;
+		height: 0.65rem;
+		border-radius: 50%;
+		background: #3d444d;
+	}
+	.term-title {
+		margin-inline-start: 0.5rem;
+		font-size: 0.75rem;
+		color: #8b949e;
+		font-family: var(--sl-font-mono, monospace);
+	}
+	.term-body {
+		margin: 0;
+		padding: 0.9rem 1rem;
+		background: #10141a;
+		border: 1px solid #30363d;
+		border-radius: 0 0 0.6rem 0.6rem;
+		font-size: var(--sl-text-sm);
+		line-height: 1.7;
+		overflow-x: auto;
+	}
+	.term-line {
+		display: block;
+		white-space: pre;
+	}
+	.term-line.cmd {
+		color: #e6edf3;
+		font-weight: 600;
+	}
+	.term-line.out {
+		color: #c9d1d9;
+	}
+	.term-line.dim {
+		color: #767f89;
+	}
+	.term-line.ok {
+		color: #56d364;
+	}
+	.term-line.err {
+		color: #f85149;
+	}
+	.term-line.hl {
+		color: #f0946a;
+	}
+	.term-caption {
+		margin-top: 0.5rem;
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-3);
+	}
+	.term-caption :global(p) {
+		display: inline;
+		margin: 0;
+	}
+	.term-tag {
+		display: inline-block;
+		margin-inline-end: 0.5rem;
+		padding: 0 0.45rem;
+		border: 1px solid var(--sl-color-hairline);
+		border-radius: 999px;
+		font-size: 0.72rem;
+		color: var(--sl-color-gray-2);
+	}
+</style>

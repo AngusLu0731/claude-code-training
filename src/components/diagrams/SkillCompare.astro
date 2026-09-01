@@ -1,0 +1,87 @@
+---
+/** 第 5 章概念圖：skill／subagent／workflow 三者的分工，用三張卡片對照。 */
+---
+
+<figure class="cc-diagram">
+	<div class="compare">
+		<div class="card highlight">
+			<p class="card-icon" aria-hidden="true">📋</p>
+			<p class="card-name">skill<span class="card-tag">本章</span></p>
+			<p class="card-what">一份步驟說明書</p>
+			<p class="card-how">主對話自己照著做，<br />共享同一個 context</p>
+		</div>
+		<div class="card">
+			<p class="card-icon" aria-hidden="true">🕵️</p>
+			<p class="card-name">subagent<span class="card-tag muted">第 2 章</span></p>
+			<p class="card-what">一個獨立的執行者</p>
+			<p class="card-how">自己的 context，<br />做完只回摘要</p>
+		</div>
+		<div class="card">
+			<p class="card-icon" aria-hidden="true">🏭</p>
+			<p class="card-name">workflow<span class="card-tag muted">第 3 章</span></p>
+			<p class="card-what">一條產線</p>
+			<p class="card-how">編排多個 subagent，<br />照腳本跑</p>
+		</div>
+	</div>
+	<figcaption>步驟本身不需要隔離就用 skill；要隔離 context 用 subagent；要編排很多個就是 workflow。</figcaption>
+</figure>
+
+<style>
+	.compare {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 0.75rem;
+	}
+	@media (max-width: 640px) {
+		.compare {
+			grid-template-columns: 1fr;
+		}
+	}
+	.card {
+		border: 1px solid var(--sl-color-hairline);
+		border-radius: 0.75rem;
+		background: var(--sl-color-bg-nav);
+		padding: 1rem;
+		text-align: center;
+	}
+	.card.highlight {
+		border-color: var(--sl-color-accent);
+	}
+	.card p {
+		margin: 0;
+	}
+	.card-icon {
+		font-size: 1.75rem;
+		line-height: 1;
+	}
+	.card-name {
+		margin-top: 0.5rem !important;
+		font-weight: 700;
+		font-family: var(--sl-font-mono, monospace);
+		color: var(--sl-color-white);
+	}
+	.card-tag {
+		margin-inline-start: 0.4rem;
+		font-family: var(--sl-font);
+		font-size: 0.7rem;
+		font-weight: 600;
+		vertical-align: 0.12em;
+		padding: 0.1rem 0.45rem;
+		border-radius: 999px;
+		background: var(--sl-color-accent);
+		color: var(--sl-color-black);
+	}
+	.card-tag.muted {
+		background: var(--sl-color-gray-5);
+		color: var(--sl-color-gray-1);
+	}
+	.card-what {
+		margin-top: 0.4rem !important;
+		color: var(--sl-color-white);
+	}
+	.card-how {
+		margin-top: 0.35rem !important;
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-3);
+	}
+</style>

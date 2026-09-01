@@ -1,0 +1,71 @@
+---
+/** 第 1 章概念圖：兩個 worktree 各做各的，最後在主 checkout 收斂。 */
+---
+
+<figure class="cc-diagram">
+	<svg viewBox="0 0 720 330" role="img" aria-label="兩個 worktree session 平行工作，最後 merge 回主 checkout 的示意圖">
+		<defs>
+			<marker id="wt-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+				<path d="M 0 0 L 10 5 L 0 10 z" class="arrow-head"></path>
+			</marker>
+		</defs>
+
+		<rect class="box" x="30" y="42" width="300" height="108" rx="10"></rect>
+		<text class="box-title" x="180" y="74" text-anchor="middle">終端機 A</text>
+		<text class="box-sub" x="180" y="100" text-anchor="middle">worktree a（分支 worktree-a）</text>
+		<text class="box-sub" x="180" y="124" text-anchor="middle">只改 src/ 與 tests/</text>
+
+		<rect class="box" x="390" y="42" width="300" height="108" rx="10"></rect>
+		<text class="box-title" x="540" y="74" text-anchor="middle">終端機 B</text>
+		<text class="box-sub" x="540" y="100" text-anchor="middle">worktree b（分支 worktree-b）</text>
+		<text class="box-sub" x="540" y="124" text-anchor="middle">只改 README.md</text>
+
+		<text class="hint" x="360" y="26" text-anchor="middle">兩件事同時進行，各用一份自己的目錄影本</text>
+
+		<rect class="box accent" x="210" y="248" width="300" height="62" rx="10"></rect>
+		<text class="box-title" x="360" y="274" text-anchor="middle">終端機 C：主 checkout</text>
+		<text class="box-sub" x="360" y="296" text-anchor="middle">main 分支，最後由你收斂</text>
+
+		<line class="arrow" x1="180" y1="150" x2="300" y2="244" marker-end="url(#wt-arrow)"></line>
+		<line class="arrow" x1="540" y1="150" x2="420" y2="244" marker-end="url(#wt-arrow)"></line>
+		<text class="arrow-label" x="290" y="208" text-anchor="end">git merge --no-ff worktree-a</text>
+		<text class="arrow-label" x="430" y="208" text-anchor="start">git merge --no-ff worktree-b</text>
+	</svg>
+	<figcaption>一件事一張桌子：A、B 各自在自己的影本上做，做完由你在主桌把成果合併回來。</figcaption>
+</figure>
+
+<style>
+	.box {
+		fill: var(--sl-color-bg-nav);
+		stroke: var(--sl-color-gray-4);
+		stroke-width: 1.5;
+	}
+	.box.accent {
+		stroke: var(--sl-color-accent);
+	}
+	.box-title {
+		fill: var(--sl-color-white);
+		font-size: 17px;
+		font-weight: 600;
+	}
+	.box-sub {
+		fill: var(--sl-color-gray-2);
+		font-size: 14px;
+	}
+	.hint {
+		fill: var(--sl-color-gray-3);
+		font-size: 13px;
+	}
+	.arrow {
+		stroke: var(--sl-color-accent);
+		stroke-width: 2;
+	}
+	.arrow-head {
+		fill: var(--sl-color-accent);
+	}
+	.arrow-label {
+		fill: var(--sl-color-gray-2);
+		font-size: 13px;
+		font-family: var(--sl-font-mono, monospace);
+	}
+</style>

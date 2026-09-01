@@ -1,0 +1,83 @@
+---
+/** 第 3 章原理圖：review-flow 的資料流——站與站之間流的是固定形狀的資料，不是對話。 */
+---
+
+<figure class="cc-diagram">
+	<svg viewBox="0 0 780 260" role="img" aria-label="兩個 review agent 各回一份 findings，經 schema 驗證與合併後，交給 synthesize 產出摘要回到對話">
+		<defs>
+			<marker id="df-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+				<path d="M 0 0 L 10 5 L 0 10 z" class="arrow-head"></path>
+			</marker>
+		</defs>
+
+		<rect class="chip" x="16" y="30" width="150" height="48" rx="10"></rect>
+		<text class="chip-text mono" x="91" y="60" text-anchor="middle">review:todo</text>
+		<rect class="chip" x="16" y="182" width="150" height="48" rx="10"></rect>
+		<text class="chip-text mono" x="91" y="212" text-anchor="middle">review:tests</text>
+
+		<rect class="data" x="206" y="30" width="150" height="48" rx="6"></rect>
+		<text class="data-text mono" x="281" y="50" text-anchor="middle">findings: 5 筆</text>
+		<text class="data-note" x="281" y="68" text-anchor="middle">schema 驗過 ✓</text>
+		<rect class="data" x="206" y="182" width="150" height="48" rx="6"></rect>
+		<text class="data-text mono" x="281" y="202" text-anchor="middle">findings: 5 筆</text>
+		<text class="data-note" x="281" y="220" text-anchor="middle">schema 驗過 ✓</text>
+
+		<rect class="data merge" x="406" y="106" width="140" height="48" rx="6"></rect>
+		<text class="data-text" x="476" y="126" text-anchor="middle">合併成 10 筆</text>
+		<text class="data-note mono" x="476" y="144" text-anchor="middle">filter(Boolean)</text>
+
+		<rect class="chip" x="586" y="106" width="130" height="48" rx="10"></rect>
+		<text class="chip-text mono" x="651" y="136" text-anchor="middle">synthesize</text>
+
+		<line class="arrow" x1="170" y1="54" x2="200" y2="54" marker-end="url(#df-arrow)"></line>
+		<line class="arrow" x1="170" y1="206" x2="200" y2="206" marker-end="url(#df-arrow)"></line>
+		<line class="arrow" x1="360" y1="54" x2="400" y2="112" marker-end="url(#df-arrow)"></line>
+		<line class="arrow" x1="360" y1="206" x2="400" y2="148" marker-end="url(#df-arrow)"></line>
+		<line class="arrow" x1="550" y1="130" x2="580" y2="130" marker-end="url(#df-arrow)"></line>
+		<line class="arrow" x1="720" y1="130" x2="756" y2="130" marker-end="url(#df-arrow)"></line>
+		<text class="data-note" x="738" y="112" text-anchor="middle">摘要</text>
+		<text class="data-note" x="738" y="158" text-anchor="middle">回對話</text>
+	</svg>
+	<figcaption>站與站之間流的是固定形狀的資料（schema 驗過的 JSON），不是對話——所以每次跑，結構都一樣。</figcaption>
+</figure>
+
+<style>
+	.chip {
+		fill: var(--sl-color-bg-nav);
+		stroke: var(--sl-color-gray-4);
+		stroke-width: 1.5;
+	}
+	.chip-text {
+		fill: var(--sl-color-white);
+		font-size: 14px;
+	}
+	.chip-text.mono,
+	.data-text.mono,
+	.data-note.mono {
+		font-family: var(--sl-font-mono, monospace);
+	}
+	.data {
+		fill: var(--sl-color-accent-low);
+		stroke: var(--sl-color-accent);
+		stroke-width: 1.5;
+	}
+	.data.merge {
+		fill: var(--sl-color-bg-nav);
+	}
+	.data-text {
+		fill: var(--sl-color-white);
+		font-size: 13.5px;
+		font-weight: 600;
+	}
+	.data-note {
+		fill: var(--sl-color-gray-3);
+		font-size: 12.5px;
+	}
+	.arrow {
+		stroke: var(--sl-color-accent);
+		stroke-width: 2;
+	}
+	.arrow-head {
+		fill: var(--sl-color-accent);
+	}
+</style>

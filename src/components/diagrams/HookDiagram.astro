@@ -1,0 +1,102 @@
+---
+/** 第 4 章概念圖：PreToolUse hook 是工具執行前的閘門，用 exit code 決定放行或擋下。 */
+---
+
+<figure class="cc-diagram">
+	<svg viewBox="0 0 760 300" role="img" aria-label="Claude 要用 Edit 改檔前經過 spec-gate 閘門：SPEC.md 存在就放行，不存在就擋下並回理由">
+		<defs>
+			<marker id="hk-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+				<path d="M 0 0 L 10 5 L 0 10 z" class="arrow-head"></path>
+			</marker>
+			<marker id="hk-arrow-ok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+				<path d="M 0 0 L 10 5 L 0 10 z" class="arrow-head ok"></path>
+			</marker>
+			<marker id="hk-arrow-no" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+				<path d="M 0 0 L 10 5 L 0 10 z" class="arrow-head no"></path>
+			</marker>
+		</defs>
+
+		<rect class="box" x="20" y="112" width="200" height="76" rx="10"></rect>
+		<text class="box-title" x="120" y="144" text-anchor="middle">Claude 要用 Edit</text>
+		<text class="box-sub" x="120" y="170" text-anchor="middle">改 src/todo.py</text>
+
+		<rect class="gate" x="290" y="92" width="180" height="116" rx="10"></rect>
+		<line class="gate-bar" x1="320" y1="104" x2="320" y2="196"></line>
+		<line class="gate-bar" x1="342" y1="104" x2="342" y2="196"></line>
+		<text class="box-title" x="404" y="140" text-anchor="middle">閘門</text>
+		<text class="box-sub mono" x="404" y="166" text-anchor="middle">spec_gate.py</text>
+
+		<line class="arrow" x1="224" y1="150" x2="284" y2="150" marker-end="url(#hk-arrow)"></line>
+		<text class="hint" x="254" y="136" text-anchor="middle">執行前</text>
+
+		<rect class="box ok" x="540" y="36" width="200" height="88" rx="10"></rect>
+		<text class="box-title" x="640" y="68" text-anchor="middle">放行（exit 0）</text>
+		<text class="box-sub" x="640" y="94" text-anchor="middle">SPEC.md 存在</text>
+
+		<rect class="box no" x="540" y="176" width="200" height="88" rx="10"></rect>
+		<text class="box-title" x="640" y="208" text-anchor="middle">擋下（exit 2）</text>
+		<text class="box-sub" x="640" y="234" text-anchor="middle">stderr 的理由會交給 Claude</text>
+
+		<line class="arrow ok" x1="474" y1="120" x2="534" y2="84" marker-end="url(#hk-arrow-ok)"></line>
+		<line class="arrow no" x1="474" y1="180" x2="534" y2="216" marker-end="url(#hk-arrow-no)"></line>
+	</svg>
+	<figcaption>提示詞是「請它不要」，hook 是「它做不到」：Edit 執行前一刻先過閘門，exit 2 就是擋下。</figcaption>
+</figure>
+
+<style>
+	.box {
+		fill: var(--sl-color-bg-nav);
+		stroke: var(--sl-color-gray-4);
+		stroke-width: 1.5;
+	}
+	.box.ok {
+		stroke: var(--sl-color-green);
+	}
+	.box.no {
+		stroke: var(--sl-color-red);
+	}
+	.gate {
+		fill: var(--sl-color-bg-nav);
+		stroke: var(--sl-color-accent);
+		stroke-width: 2;
+	}
+	.gate-bar {
+		stroke: var(--sl-color-accent);
+		stroke-width: 3;
+	}
+	.box-title {
+		fill: var(--sl-color-white);
+		font-size: 16px;
+		font-weight: 600;
+	}
+	.box-sub {
+		fill: var(--sl-color-gray-2);
+		font-size: 13px;
+	}
+	.box-sub.mono {
+		font-family: var(--sl-font-mono, monospace);
+	}
+	.hint {
+		fill: var(--sl-color-gray-3);
+		font-size: 13px;
+	}
+	.arrow {
+		stroke: var(--sl-color-accent);
+		stroke-width: 2;
+	}
+	.arrow.ok {
+		stroke: var(--sl-color-green);
+	}
+	.arrow.no {
+		stroke: var(--sl-color-red);
+	}
+	.arrow-head {
+		fill: var(--sl-color-accent);
+	}
+	.arrow-head.ok {
+		fill: var(--sl-color-green);
+	}
+	.arrow-head.no {
+		fill: var(--sl-color-red);
+	}
+</style>

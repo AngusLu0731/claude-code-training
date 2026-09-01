@@ -1,23 +1,48 @@
 ---
-title: 第 3 章 subagent
+title: 第 2 章 subagent
 description: 建一個 .claude/agents/reviewer.md，派它審一個檔，拿回附行號的回報。
 ---
 
 import { Steps, Aside } from '@astrojs/starlight/components';
 import Exercise from '../../components/Exercise.astro';
 import Checklist from '../../components/Checklist.astro';
+import ResetNote from '../../components/ResetNote.astro';
+import SubagentDiagram from '../../components/diagrams/SubagentDiagram.astro';
+import ContextBarsDiagram from '../../components/diagrams/ContextBarsDiagram.astro';
+import TermDemo from '../../components/TermDemo.astro';
 
 ## 用途
 
-Subagent 是主對話派出去的另一個 Claude：它有自己的 context、自己的系統提示、自己被允許的工具，做完把結果**摘要**回主對話。
-三個好處：**context 隔離**——讀十個檔案找線索的過程留在 subagent 裡，主對話只收到結論，不會被幾萬 token 的檔案內容淹沒；**平行**——一次派好幾個，各查各的；**專職**——用 `.claude/agents/<name>.md` 把「審查員」「查資料的」寫成固定角色，每次派都是同一套標準。
+<p class="one-liner">一句話：把「要翻很多東西」的苦工派給另一個 Claude，做完只把結論帶回來。</p>
+
+<SubagentDiagram />
+
+上一章的 skill 是一份說明書，Claude 在**你的對話裡**照著做；這一章把工作整個搬出去。
+Subagent 是主對話派出去的另一個 Claude：它有自己的 context（自己的對話記憶）、自己的系統提示、自己被允許的工具，做完把結果**摘要**回主對話。三個好處：
+
+- **context 隔離**：讀十個檔案找線索的過程留在 subagent 裡，主對話只收到結論。
+- **平行**：一次派好幾個，各查各的。
+- **專職**：用 `.claude/agents/<name>.md` 把「審查員」「查資料的」寫成固定角色，每次派都是同一套標準。
+
 本章要你自己寫一個唯讀的審查員，派它審一個檔，並要求它回報附檔名與行號。
+
+### 原理：context 是有價格的
+
+<ContextBarsDiagram />
+
+用具體數字走一遍。假設要在十個檔案裡找一個 bug 的線索，每個檔約 3,000 token（token＝內容量的計量單位）：
+
+- **主對話自己讀**：十個檔全部進了 context，約 30,000 token。重點是——context 不是「讀過就沒事」，你之後的**每一句**對話，都要帶著這 30,000 token 一起送給模型：又慢、又貴，而且一堆不相干的程式碼會干擾它後面的判斷。
+- **派 subagent 去讀**：那 30,000 token 發生在 subagent 自己的房間裡，做完房間就收掉。主對話只多了一段 300 token 的結論——差一百倍，而且結論以外的雜訊完全不進來。
+
+這就是為什麼「要讀很多、只需要結論」的工作都該派出去：**你付不起把所有原始材料都留在主對話裡的代價**。
 
 ## 什麼時候用
 
 - **要讀很多東西、只需要結論**：找某個設定在哪被讀、某個錯誤從哪來。派 subagent 去翻，主對話收結論。
 - **要一套固定標準重複執行**：程式碼審查、安全檢查、文件一致性。寫成 agent 定義，標準就不會每次飄。
 - **要限制它能做什麼**：審查員就該只能讀不能改。`tools: Read, Grep, Glob` 這一行比「請不要改檔案」的提示詞可靠得多。
+- **實作完的對抗式審查**：讓 Claude 寫完一個功能後，派一個**乾淨 context** 的審查者看 diff——它沒參與實作，不會替剛寫好的 code 護短，比同一個對話裡「自己審自己」可靠。小心一件事：被要求找問題的審查者永遠找得到問題，請它**只報影響正確性的**，其餘當參考，否則會被推著過度設計。
 
 不該用的情況：改動需要你一路看著、隨時改方向的工作。subagent 回來的是摘要，中間過程你看不到，適合「派出去等結果」，不適合「一起做」。
 
@@ -44,37 +69,47 @@ tools: Read, Grep, Glob
 | `tools` | 允許的工具清單；不寫就繼承全部。審查員只給 `Read, Grep, Glob` |
 | `model` | 可選：`sonnet`、`opus`、`haiku` 或 `inherit`（預設） |
 
+### 內建的 subagent，跟你的並列
+
+Claude Code 本來就帶著幾個內建 subagent：**Explore**（唯讀的程式碼搜索，「這東西在哪」類的問題常會自動派它）、**Plan**（plan mode 的研究員）、**general-purpose**（通用多步任務）。你放進 `.claude/agents/` 的定義跟它們並列，Claude 依 description 挑人——所以你平常看到 Claude「派了個 Explore 去找」，用的就是本章同一套機制。
+
 ### 怎麼叫它
 
 - **點名**：提示詞開頭打 `@agent-reviewer`，後面接任務。輸入 `@` 會出現選單，也可以直接手打。
 - **自然語言**：「用 reviewer subagent 審 src/todo.py」。Claude 看到 description 對得上就會派。
 - **自動**：你沒點名，但任務跟某個 agent 的 description 很像，Claude 也可能自己派。
 
+想讓「自動」那條路準，description 要寫**觸發語**，不是寫類別名：「改完程式碼之後主動用，審查可讀性與錯誤處理」比「審查 agent」好——前者讓 Claude 知道**什麼時機**該派它。
+
 ### 看它在做什麼
 
 派出去之後，對話裡會多一列 subagent 的進度（名字、跑了多久、用了多少 token）。點進去（或在任務面板按下箭頭再 Enter）可以看它讀了哪些檔、回了什麼；主對話收到的是最後那段摘要。
 
-### 團隊真實案例（去機密版）
+### 實務案例：把權限寫進定義檔
 
-前一章的五站 workflow 裡，每一站其實就是一個 subagent：ROUTE 站只讀不改、VERIFY 站只准跑測試與改測試指出的檔。把「這站能碰什麼」寫進定義檔的 `tools`，比在 prompt 裡拜託它可靠——這也是本章審查員只給讀取工具的理由。
+一個團隊把後端開發流程拆成五站的自動化流程（下一章的實務案例會完整看到這條產線），其實每一站就是一個 subagent：ROUTE 站只讀不改、VERIFY 站只准跑測試與改測試指出的檔。把「這站能碰什麼」寫進定義檔的 `tools`，比在 prompt 裡拜託它可靠——這也是本章審查員只給讀取工具的理由。
 
 ## 你來做
 
-<Exercise id="ch3-ex1" title="建 reviewer.md，派它審 src/todo.py">
+<Exercise id="ch2-ex1" title="建 reviewer.md，派它審 src/todo.py">
 
 <Steps>
 
-0. **起點**：把 repo 重置回乾淨的 `main`（在 repo 根目錄執行）。
+1. **起點**：把 repo 重置回乾淨的 `main`（在 repo 根目錄執行）。
 
    ```bash
-   git merge --abort 2>/dev/null; git checkout -f main && git reset --hard origin/main && git clean -fd && git worktree prune
+   git merge --abort 2>/dev/null
+   git checkout -f main && git reset --hard origin/main
+   git clean -fd && git worktree prune
    ```
 
-1. **步驟 0.5**：如果這個目錄還沒接受過信任對話，先 `claude` 接受再 `/exit`。
+   <ResetNote />
 
-2. **在終端機（不是 Claude 裡）**貼這個檔案到 `.claude/agents/reviewer.md`（與練習 repo 的 `solutions/ch3-subagent/.claude/agents/reviewer.md` 相同）：
+2. **信任資料夾**：如果這個目錄還沒接受過信任對話，先 `claude` 接受再 `/exit`。
 
-   ```bash
+3. **在終端機（不是 Claude 裡）**貼這個檔案到 `.claude/agents/reviewer.md`（與練習 repo 的 `solutions/ch2-subagent/.claude/agents/reviewer.md` 相同）：
+
+   ````bash
    cat > .claude/agents/reviewer.md <<'EOF'
    ---
    name: reviewer
@@ -102,15 +137,15 @@ tools: Read, Grep, Glob
    例如 `src/todo.py:42 — 這裡的例外沒有記錄原因，建議至少印到 stderr`。
    最後用一句話總結整體狀況。沒有問題就直接說「沒有發現需要處理的問題」。
    EOF
-   ```
+   ````
 
-3. 建完任何 `.claude/` 檔案都要重開：`claude` 還開著先 `/exit`，然後：
+4. 建完任何 `.claude/` 檔案都要重開：`claude` 還開著先 `/exit`，然後：
 
    ```bash
    claude
    ```
 
-4. 點名派它：
+5. 點名派它：
 
    ```text
    @agent-reviewer 審 src/todo.py
@@ -125,6 +160,18 @@ tools: Read, Grep, Glob
 </Steps>
 
 ### 預期看到
+
+<TermDemo title="claude — @agent-reviewer" lines={[
+	{ text: '@agent-reviewer 審 src/todo.py', kind: 'cmd' },
+	{ text: '⏺ reviewer(審 src/todo.py)', kind: 'hl' },
+	{ text: '  ⎿ Read(src/todo.py)', kind: 'dim' },
+	{ text: '  ⎿ Done (2 tool uses · 16.2k tokens · 38s)', kind: 'dim' },
+	{ text: 'src/todo.py:24 — json.load 沒有錯誤處理，檔案損毀會直接噴 traceback', kind: 'out' },
+	{ text: 'src/todo.py:28 — save_items 直接覆寫，寫入中斷會遺失資料', kind: 'out' },
+	{ text: '整體：功能正確，但錯誤處理與測試涵蓋需要補強。', kind: 'out' },
+]}>
+橘色那列是 reviewer 的進度——工作在 subagent 的房間裡做；每筆回報都帶行號。token 數與筆數每次不同。
+</TermDemo>
 
 - 對話裡出現一列 **reviewer** 的 subagent 進度（不是主對話自己讀檔）；展開能看到它用 Read 讀了 `src/todo.py`。
 - 回報是幾行 `src/todo.py:<行號> — 建議` 形式的條目，最後一句總結。行號要對得上你打開檔案看到的位置。
@@ -151,9 +198,9 @@ tools: Read, Grep, Glob
 你的回報內容不會一模一樣（模型每次找到的點不同），但**每一筆都帶 `src/todo.py:行號`**、而且 `git status` 沒有任何檔被改，這兩點應該一致。
 
 <Checklist items={[
-  { id: 'ch3-ex1-1', text: '.claude/agents/reviewer.md 貼好、重開後 @agent-reviewer 選得到' },
-  { id: 'ch3-ex1-2', text: '對話裡看到 reviewer 這個 subagent 的進度列，而不是主對話自己讀檔' },
-  { id: 'ch3-ex1-3', text: '回報每一筆都有 src/todo.py:行號，且 git status 沒有任何檔被改' },
+  { id: 'ch2-ex1-1', text: '.claude/agents/reviewer.md 貼好、重開後 @agent-reviewer 選得到' },
+  { id: 'ch2-ex1-2', text: '對話裡看到 reviewer 這個 subagent 的進度列，而不是主對話自己讀檔' },
+  { id: 'ch2-ex1-3', text: '回報每一筆都有 src/todo.py:行號，且 git status 沒有任何檔被改' },
 ]} />
 
 </Exercise>

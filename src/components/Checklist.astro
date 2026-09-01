@@ -14,7 +14,10 @@ const { items } = Astro.props;
 ---
 
 <progress-checklist class="checklist">
-	<p class="checklist-heading">自檢（勾選會存在你的瀏覽器）</p>
+	<p class="checklist-heading">
+		自檢（勾選會存在你的瀏覽器）
+		<span class="checklist-count"><span data-checklist-done>0</span>/{items.length}</span>
+	</p>
 	<ul>
 		{
 			items.map((item) => (
@@ -34,6 +37,10 @@ const { items } = Astro.props;
 	class ProgressChecklist extends HTMLElement {
 		connectedCallback() {
 			const boxes = this.querySelectorAll<HTMLInputElement>('input[type="checkbox"][data-id]');
+			const refreshCount = () => {
+				const slot = this.querySelector('[data-checklist-done]');
+				if (slot) slot.textContent = String([...boxes].filter((b) => b.checked).length);
+			};
 			boxes.forEach((box) => {
 				const id = box.dataset.id ?? '';
 				try {
@@ -47,11 +54,13 @@ const { items } = Astro.props;
 					} catch {
 						/* 寫不進去就只保留畫面狀態 */
 					}
+					refreshCount();
 					document.dispatchEvent(
 						new CustomEvent('cc-training:progress', { detail: { id, checked: box.checked } }),
 					);
 				});
 			});
+			refreshCount();
 		}
 	}
 	if (!customElements.get('progress-checklist')) customElements.define('progress-checklist', ProgressChecklist);
@@ -68,6 +77,16 @@ const { items } = Astro.props;
 	.checklist-heading {
 		margin: 0 0 0.5rem;
 		font-weight: 600;
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 0.5rem;
+	}
+	.checklist-count {
+		font-family: var(--sl-font-mono, monospace);
+		font-size: var(--sl-text-sm);
+		font-weight: 700;
+		color: var(--sl-color-accent-high);
 	}
 	.checklist ul {
 		list-style: none;

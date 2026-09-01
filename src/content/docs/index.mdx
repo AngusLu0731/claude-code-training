@@ -1,11 +1,25 @@
 ---
 title: Claude Code 進階實作教材
 description: 給已會 Claude Code 基礎的人：多 session 多工、workflow 定義、subagent、hooks、skills，五章跟著做。
+head:
+  - tag: title
+    content: Claude Code 進階實作教材
 ---
 
 import { Steps, Aside } from '@astrojs/starlight/components';
 import Progress from '../../components/Progress.astro';
 import { CLAUDE_CODE_VERSION, VERIFIED_ON } from '../../data/version';
+
+<div class="home-hero">
+	<p class="home-tagline">
+		五個進階主題，跟著做、看到結果、勾掉自檢。
+		<span class="home-topics">multi-session ・ workflow ・ subagent ・ hooks ・ skills</span>
+	</p>
+	<div class="home-actions">
+		<a class="home-cta" href="/01-skills/">開始第 1 章 →</a>
+		<a class="home-cta secondary" href="#開始前">先看開始前檢查</a>
+	</div>
+</div>
 
 這是一套「跟著做」的教材，不是講義。五個進階主題各自成章，每章固定四段：**用途**、**什麼時候用**、**基本用法**、**你來做**。
 「你來做」給你可以直接複製的指令、做完應該看到什麼、以及自檢勾選；真正的練習在你自己的終端機裡完成，網頁只負責帶路與記錄進度。
@@ -59,15 +73,50 @@ auto／manual 權限模式看到的提示不一樣（有人會被問「要不要
 
 ## 五章
 
-| 章 | 主題 | 你會做出什麼 |
-| --- | --- | --- |
-| [第 1 章](/01-multi-session/) | 多 session 多工 | 兩個 worktree 分工、第三個終端機 merge 收斂 |
-| [第 2 章](/02-workflow/) | workflow 定義 | 自己的 `.claude/workflows/review-flow.js`，用 `/review-flow` 跑完 |
-| [第 3 章](/03-subagent/) | subagent | 自己的 `.claude/agents/reviewer.md`，派它審一個檔 |
-| [第 4 章](/04-hooks/) | hooks | 一個 PreToolUse hook，親眼看到它擋下一次 Edit |
-| [第 5 章](/05-skills/) | skills | 自己的 `.claude/skills/changelog/SKILL.md`，用 `/changelog` 叫起來 |
+<div class="chapter-cards">
+	<a class="chapter-card" href="/01-skills/">
+		<span class="chapter-num">01</span>
+		<span class="chapter-name">skills</span>
+		<span class="chapter-desc">一份步驟說明書：自己的 changelog skill，用 /changelog 叫起來</span>
+	</a>
+	<a class="chapter-card" href="/02-subagent/">
+		<span class="chapter-num">02</span>
+		<span class="chapter-name">subagent</span>
+		<span class="chapter-desc">一個獨立執行者：自己的 reviewer.md，派它審一個檔</span>
+	</a>
+	<a class="chapter-card" href="/03-workflow/">
+		<span class="chapter-num">03</span>
+		<span class="chapter-name">workflow 定義</span>
+		<span class="chapter-desc">一條產線編排多個 subagent：review-flow.js，用 /review-flow 跑完</span>
+	</a>
+	<a class="chapter-card" href="/04-hooks/">
+		<span class="chapter-num">04</span>
+		<span class="chapter-name">hooks</span>
+		<span class="chapter-desc">把規則變成閘門：一個 PreToolUse hook，親眼看到它擋下一次 Edit</span>
+	</a>
+	<a class="chapter-card" href="/05-multi-session/">
+		<span class="chapter-num">05</span>
+		<span class="chapter-name">多 session 多工</span>
+		<span class="chapter-desc">兩個 worktree 分工、第三個終端機 merge 收斂</span>
+	</a>
+</div>
 
-每章大約 20 到 40 分鐘。順序建議照章，但每章開頭都會把 repo 重置回乾淨狀態，跳著做也可以。
+前三章是一條遞進鏈——**說明書（skill）→ 執行者（subagent）→ 產線（workflow）**；第 4 章把規則變成閘門，第 5 章把多個 session 平行起來。每章大約 20 到 40 分鐘，建議照章走；不過每章開頭都會把 repo 重置回乾淨狀態，跳著做也可以。
+
+### 我的問題該用哪個工具？
+
+先給一張地圖，之後每章都會回來對照：
+
+| 你的情況 | 用什麼 | 在哪章 |
+| --- | --- | --- |
+| 每次 session 都該知道的事實與規範（指令、風格、慣例） | `CLAUDE.md` | [官方文件](https://code.claude.com/docs/en/memory) |
+| 一套會重複執行的步驟（程序） | skill | 第 1 章 |
+| 要讀很多東西、只要結論；或要一個固定角色 | subagent | 第 2 章 |
+| 同一套多 agent 流程，每次都要長一樣 | workflow | 第 3 章 |
+| 沒有例外的硬規則（不准改、每次必跑） | hook | 第 4 章 |
+| 兩件不相干的事要同時進行 | 多 session＋worktree | 第 5 章 |
+
+口訣：**事實進 CLAUDE.md、程序進 skill、隔離用 subagent、編排用 workflow、強制用 hook、平行開 session**。
 
 <Aside type="note">
 教材內容以 Claude Code {CLAUDE_CODE_VERSION}（{VERIFIED_ON} 實跑驗證）為準。之後版本若行為不同，以官方文件為主：

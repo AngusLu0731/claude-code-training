@@ -1,0 +1,79 @@
+---
+/** 第 2 章概念圖：workflow 是一條產線——站裡的 agent 平行跑，站與站依序接力。 */
+---
+
+<figure class="cc-diagram">
+	<svg viewBox="0 0 780 300" role="img" aria-label="review-flow 產線示意圖：Review 站兩個 agent 平行審查，Synthesize 站彙整成摘要回到對話">
+		<defs>
+			<marker id="wf-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+				<path d="M 0 0 L 10 5 L 0 10 z" class="arrow-head"></path>
+			</marker>
+		</defs>
+
+		<rect class="chip start" x="20" y="122" width="128" height="52" rx="26"></rect>
+		<text class="chip-text" x="84" y="154" text-anchor="middle">/review-flow</text>
+
+		<rect class="phase" x="196" y="34" width="240" height="232" rx="12"></rect>
+		<text class="phase-title" x="316" y="66" text-anchor="middle">Review 站</text>
+		<text class="hint" x="316" y="88" text-anchor="middle">兩個 agent 同時跑</text>
+
+		<rect class="chip" x="222" y="108" width="188" height="52" rx="10"></rect>
+		<text class="chip-text mono" x="316" y="140" text-anchor="middle">review:todo</text>
+		<rect class="chip" x="222" y="182" width="188" height="52" rx="10"></rect>
+		<text class="chip-text mono" x="316" y="214" text-anchor="middle">review:tests</text>
+
+		<rect class="phase" x="486" y="76" width="180" height="148" rx="12"></rect>
+		<text class="phase-title" x="576" y="108" text-anchor="middle">Synthesize 站</text>
+		<rect class="chip" x="508" y="130" width="136" height="52" rx="10"></rect>
+		<text class="chip-text mono" x="576" y="162" text-anchor="middle">synthesize</text>
+
+		<line class="arrow" x1="148" y1="148" x2="190" y2="148" marker-end="url(#wf-arrow)"></line>
+		<line class="arrow" x1="436" y1="148" x2="480" y2="148" marker-end="url(#wf-arrow)"></line>
+		<line class="arrow" x1="666" y1="148" x2="710" y2="148" marker-end="url(#wf-arrow)"></line>
+		<text class="hint" x="726" y="130" text-anchor="middle">摘要</text>
+		<text class="hint" x="726" y="150" text-anchor="middle">回到</text>
+		<text class="hint" x="726" y="170" text-anchor="middle">對話</text>
+	</svg>
+	<figcaption>一條產線兩個站：站裡的 agent 平行跑，站與站依序接力，最後把回傳值送回你的對話。</figcaption>
+</figure>
+
+<style>
+	.phase {
+		fill: none;
+		stroke: var(--sl-color-accent);
+		stroke-width: 1.5;
+		stroke-dasharray: 6 5;
+	}
+	.phase-title {
+		fill: var(--sl-color-white);
+		font-size: 16px;
+		font-weight: 600;
+	}
+	.chip {
+		fill: var(--sl-color-bg-nav);
+		stroke: var(--sl-color-gray-4);
+		stroke-width: 1.5;
+	}
+	.chip.start {
+		stroke: var(--sl-color-accent);
+	}
+	.chip-text {
+		fill: var(--sl-color-white);
+		font-size: 15px;
+	}
+	.chip-text.mono {
+		font-family: var(--sl-font-mono, monospace);
+		font-size: 14px;
+	}
+	.hint {
+		fill: var(--sl-color-gray-3);
+		font-size: 13px;
+	}
+	.arrow {
+		stroke: var(--sl-color-accent);
+		stroke-width: 2;
+	}
+	.arrow-head {
+		fill: var(--sl-color-accent);
+	}
+</style>

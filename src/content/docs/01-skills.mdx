@@ -1,0 +1,229 @@
+---
+title: 第 1 章 skills
+description: 寫一個 .claude/skills/changelog/SKILL.md，用 /changelog 叫起來。
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+import Exercise from '../../components/Exercise.astro';
+import Checklist from '../../components/Checklist.astro';
+import ResetNote from '../../components/ResetNote.astro';
+import SkillCompare from '../../components/diagrams/SkillCompare.astro';
+import SkillFlowDiagram from '../../components/diagrams/SkillFlowDiagram.astro';
+import TermDemo from '../../components/TermDemo.astro';
+
+## 用途
+
+<p class="one-liner">一句話：把每次都要重講的一套步驟寫成 SKILL.md，變成一個 /指令。</p>
+
+Skill 是一份 `SKILL.md`：上面是 YAML frontmatter（名字、什麼時候用、要不要參數），下面是 Markdown 步驟。放進 `.claude/skills/<name>/SKILL.md`，你就多了一個 `/name` 指令，Claude 也會在對話對得上 description 時自己拿出來用。
+它解決的是「同一套步驟每次都要重新講」：產 changelog、寫 MR 說明、跑固定的檢查清單。把步驟寫成 skill，每次執行都是同一份標準，而且可以進 git 給整個團隊用。
+本章要你寫一個 `changelog` skill，從 git log 產生一段 Unreleased changelog 寫進 `CHANGELOG.md`，用 `/changelog` 叫起來。
+
+### 原理：/changelog 按下去發生什麼事
+
+<SkillFlowDiagram />
+
+先看沒有 skill 的世界：每次要整理 changelog，你都要打一長段「看 git log、照 type 分組、寫成這個格式、放在檔案最上面、不要動舊內容……」。打三次，就會有三個略微不同的版本。
+把這段話存成 `SKILL.md` 之後，`/changelog` 做的事其實很單純——Claude Code 找到那份檔案，把**正文原封不動展開到對話裡**，`$ARGUMENTS` 換成你打在後面的參數（例如 `v1.0.0`），然後 Claude 照著做。
+所以 skill 沒有魔法：效果跟你自己把那段字貼進對話一模一樣。價值在別的地方——**同一份說明書、每次都一樣、進 git 之後全團隊用的都是同一套**。
+
+## 什麼時候用
+
+- **一套固定步驟重複做**：每次 release 前整理 changelog、每次開 MR 前產說明。第二次就該是 skill。
+- **想讓 Claude 在對的時機自己用**：description 寫清楚觸發條件（「使用者說要整理 changelog 時」），它會自動載入。
+- **要帶參數**：`/changelog v1.2.0` 這種「從某個 ref 之後」的需求，用 `argument-hint` 加 `$ARGUMENTS` 就能收。
+
+<SkillCompare />
+
+這三張卡片先放在這裡當地圖：**skill 是步驟說明書**（在主對話裡執行、共享 context）；**subagent 是一個獨立的執行者**（第 2 章）；**workflow 是多個 subagent 的編排**（第 3 章）。現在只要記住一件事：**步驟本身不需要隔離，就用 skill**。
+
+### CLAUDE.md 還是 skill？
+
+兩個都是「讓 Claude 記得事情」的地方，分界在**載入時機**：
+
+- `CLAUDE.md` 每次 session 都**整份載入**——放「每次都該知道的事實與規範」：指令、風格、慣例。它越長，Claude 越容易漏看重點，所以只放廣泛適用的。
+- skill 的正文**用到才載入**——放「偶爾才執行的程序」。長的參考資料放在 skill 裡，不用的時候幾乎不佔 context。
+
+[官方的判準](https://code.claude.com/docs/en/best-practices#write-an-effective-claude-md)很好記：當 CLAUDE.md 的某一段長成了「**步驟**」而不是「**事實**」，就該搬出來變 skill。
+
+## 基本用法
+
+### 檔案與 frontmatter
+
+```markdown
+---
+name: changelog
+description: 從 git log 產生 CHANGELOG 段落並寫進 CHANGELOG.md
+argument-hint: [since-ref]
+---
+
+正文：步驟、格式、限制。
+```
+
+| 欄位 | 作用 |
+| --- | --- |
+| `name` | 顯示名稱；指令名以目錄名為準，兩者保持一致最不容易搞混 |
+| `description` | 做什麼、什麼時候用。Claude 靠它決定要不要自動載入 |
+| `argument-hint` | 打 `/changelog` 時自動補全顯示的參數提示，例如 `[since-ref]` |
+| `disable-model-invocation` | 設 `true` 就只有你能用 `/name` 叫，Claude 不會自己載入。適合有副作用的步驟（deploy、送訊息——你不會想讓它自己決定要部署） |
+| `user-invocable` | 設 `false` 就只有 Claude 會自動載入、你打 `/` 叫不到。適合純背景知識（例如「舊系統的來龍去脈」） |
+| `allowed-tools` | 這個 skill 執行的那一輪可以不問就用的工具，例如 `Bash(git log *)` |
+
+正文裡可以用 `$ARGUMENTS` 拿到你打在 `/name` 後面的整串參數；沒寫 `$ARGUMENTS` 的話參數會被接在最後面。
+description 的**前幾個字最重要**——把主要使用情境放最前面，Claude 自動選用才會準。
+
+### 不只一份檔：支援檔案
+
+skill 是一個**資料夾**，不是一份檔。SKILL.md 保持精簡（官方建議 500 行以內），細節放旁邊的檔案，在 SKILL.md 裡連結並說明「什麼時候讀哪份」——Claude 需要時才會去讀，不用的檔案完全不佔 context：
+
+```text
+.claude/skills/deploy/
+├── SKILL.md          ← 必要：總覽與導覽
+├── reference.md      ← 詳細參考，需要才載入
+├── examples.md       ← 範例集，需要才載入
+└── scripts/
+    └── helper.py     ← 讓它執行的腳本，不載入內容
+```
+
+本章的 changelog skill 只需要一份 SKILL.md；等你的 skill 長大，再用這個形狀拆。
+
+### 叫法
+
+`/changelog` 或 `/changelog v1.0.0`。輸入 `/` 會列出所有可用 skill，包含內建與 plugin 提供的。
+
+### project 與 personal
+
+| 位置 | 給誰用 |
+| --- | --- |
+| `.claude/skills/<name>/SKILL.md` | 這個專案，進 git 團隊共用 |
+| `~/.claude/skills/<name>/SKILL.md` | 你的所有專案，只有你 |
+
+同名時 personal 蓋過 project。團隊規則放 project，個人習慣放 personal。另外還有 plugin marketplace：把 skills 打包成 plugin 發布，一句 `claude plugin install` 就能裝——形狀跟這裡一樣，只是多一層包裝。
+
+### 實務案例：一個「寫 MR」的 skill
+
+一個團隊有一個「寫 MR」的 skill：frontmatter 裡的 description 列出觸發詞（「寫 MR」「建 MR」「update MR」），正文是編號步驟——先偵測改動範圍、再蒐集 diff、起草四段內文、**給使用者確認**、才呼叫命令列工具送出。
+值得學的形狀：**觸發詞寫在 description**（自動載入才準）、**步驟編號**、**副作用之前一定有確認步驟**、**邊界情況單獨一段**。本章的 changelog skill 就是照這個形狀縮小版。
+
+## 你來做
+
+<Exercise id="ch1-ex1" title="寫 changelog skill，用 /changelog 叫起來">
+
+<Steps>
+
+1. **起點**：第一次做就 clone（首頁「共用步驟」做過就跳過 clone）；要重做這一章，用第二段把 repo 重置回乾淨的 `main`。
+
+   ```bash
+   git clone https://github.com/AngusLu0731/claude-code-practice.git
+   cd claude-code-practice
+   ```
+
+   已 clone／重跑（在 repo 根目錄執行）：
+
+   ```bash
+   git merge --abort 2>/dev/null
+   git checkout -f main && git reset --hard origin/main
+   git clean -fd && git worktree prune
+   ```
+
+   <ResetNote />
+
+2. **信任資料夾**：如果這個目錄還沒接受過信任對話，先 `claude` 接受再 `/exit`。
+
+3. **在終端機（不是 Claude 裡）**貼這個檔案到 `.claude/skills/changelog/SKILL.md`（與練習 repo 的 `solutions/ch1-skills/.claude/skills/changelog/SKILL.md` 相同）：
+
+   ````bash
+   mkdir -p .claude/skills/changelog
+   cat > .claude/skills/changelog/SKILL.md <<'EOF'
+   ---
+   name: changelog
+   description: 從 git log 產生 CHANGELOG 段落並寫進 CHANGELOG.md
+   argument-hint: [since-ref]
+   ---
+
+   （changelog skill v1）從 git 歷史整理一段 Unreleased changelog，寫進 repo 根目錄的 `CHANGELOG.md`。
+
+   ## 輸入
+
+   - since-ref：`$ARGUMENTS`。有給就只看 `<since-ref>..HEAD`；沒給就看全部歷史。
+
+   ## 步驟
+
+   1. 取得 commit 清單：
+      - 有 since-ref：`git log --oneline <since-ref>..HEAD`
+      - 沒有：`git log --oneline`
+   2. 依 commit 訊息開頭的 type 分組（`feat:`、`fix:`、`docs:`、`refactor:`、`test:`、`chore:`；沒有 type 的歸「其他」）。
+   3. 用 `date +%F` 取今天日期，組成下面這段，放在 `CHANGELOG.md` 的最頂端（檔案不存在就建立；已存在就插在第一行之前，不要動舊內容）：
+
+      ```markdown
+      ## Unreleased (YYYY-MM-DD)
+
+      ### feat
+      - <subject>（<短 hash>）
+
+      ### fix
+      - ...
+      ```
+
+      只列有內容的分組。
+   4. 寫完後印出這段給使用者看，並提醒：這段還沒 commit。
+
+   ## 限制
+
+   - 只動 `CHANGELOG.md`，不改其他檔案、不 commit、不 push。
+   - 不要憑空補 commit 沒寫的內容；subject 照原文。
+   EOF
+   ````
+
+4. 建完 `.claude/` 檔案要重開：`claude` 還開著先 `/exit`，然後：
+
+   ```bash
+   claude
+   ```
+
+5. 打 `/changelog`（輸入 `/` 時清單裡應該看得到它，旁邊有 `[since-ref]` 的提示）。
+
+</Steps>
+
+### 預期看到
+
+<TermDemo title="claude — /changelog" lines={[
+	{ text: '/changelog', kind: 'cmd' },
+	{ text: '（changelog skill v1）從 git 歷史整理一段 Unreleased changelog，寫進 repo 根目錄的 CHANGELOG.md。', kind: 'hl' },
+	{ text: '⏺ Bash(git log --oneline)', kind: 'dim' },
+	{ text: '⏺ Write(CHANGELOG.md)', kind: 'dim' },
+	{ text: '已寫入 CHANGELOG.md（尚未 commit）：', kind: 'out' },
+	{ text: '## Unreleased (2026-09-01)', kind: 'out' },
+	{ text: '### feat', kind: 'out' },
+	{ text: '- add done command（a1b2c3d）', kind: 'out' },
+]}>
+橘色那行「（changelog skill v1）」＝SKILL.md 正文被展開的證據；日期與條目依你的 git log 而定。
+</TermDemo>
+
+- 送出 `/changelog` 後，對話裡展開的內容第一句是 **「（changelog skill v1）」**——那是 SKILL.md 正文被載入的證據。
+- Claude 跑 `git log --oneline`，依 type 分組，寫入 `CHANGELOG.md`，並把那段印給你看。
+- `git status --porcelain` 出現 `?? CHANGELOG.md`；打開檔案第一行是 `## Unreleased (今天日期)`，底下是 `### feat`、`### docs` 之類的分組條目。
+
+### 實跑範例
+
+在乾淨的 `main` 上跑一次 `/changelog`，產出的 `CHANGELOG.md` 長這樣（日期是你跑的那天；條目數、短 hash 與分組依你 clone 到的 `main` 的 `git log` 而定，這裡不承諾固定值）：
+
+```markdown
+## Unreleased (YYYY-MM-DD)
+
+### feat
+- <feat 類型 commit 的 subject>（<短 hash>）
+
+### chore
+- <chore 類型 commit 的 subject>（<短 hash>）
+```
+
+只會列出有 commit 的分組。
+
+<Checklist items={[
+  { id: 'ch1-ex1-1', text: '.claude/skills/changelog/SKILL.md 貼好、重開後 / 清單看得到 changelog' },
+  { id: 'ch1-ex1-2', text: '/changelog 展開的內容第一句是「（changelog skill v1）」' },
+  { id: 'ch1-ex1-3', text: 'git status 出現 ?? CHANGELOG.md，內容有 ## Unreleased 與分組條目' },
+]} />
+
+</Exercise>

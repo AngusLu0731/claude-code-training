@@ -1,0 +1,67 @@
+---
+/** 第 1 章原理圖：/changelog 按下去之後，SKILL.md 如何展開進對話。 */
+---
+
+<figure class="cc-diagram">
+	<svg viewBox="0 0 780 200" role="img" aria-label="打 /changelog 後：找到 SKILL.md、正文展開進對話、$ARGUMENTS 被換成參數、Claude 照步驟執行">
+		<defs>
+			<marker id="sf-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+				<path d="M 0 0 L 10 5 L 0 10 z" class="arrow-head"></path>
+			</marker>
+		</defs>
+
+		<rect class="box accent" x="16" y="56" width="160" height="88" rx="10"></rect>
+		<text class="box-title" x="96" y="92" text-anchor="middle">你打</text>
+		<text class="box-sub mono" x="96" y="118" text-anchor="middle">/changelog v1.0.0</text>
+
+		<rect class="box" x="216" y="56" width="170" height="88" rx="10"></rect>
+		<text class="box-title" x="301" y="86" text-anchor="middle">Claude Code 找到</text>
+		<text class="box-sub mono" x="301" y="110" text-anchor="middle">skills/changelog/</text>
+		<text class="box-sub mono" x="301" y="130" text-anchor="middle">SKILL.md</text>
+
+		<rect class="box" x="426" y="56" width="170" height="88" rx="10"></rect>
+		<text class="box-title" x="511" y="86" text-anchor="middle">正文展開進對話</text>
+		<text class="box-sub mono" x="511" y="112" text-anchor="middle">$ARGUMENTS</text>
+		<text class="box-sub" x="511" y="132" text-anchor="middle">被換成 v1.0.0</text>
+
+		<rect class="box" x="636" y="56" width="130" height="88" rx="10"></rect>
+		<text class="box-title" x="701" y="86" text-anchor="middle">照步驟做</text>
+		<text class="box-sub mono" x="701" y="110" text-anchor="middle">git log →</text>
+		<text class="box-sub mono" x="701" y="130" text-anchor="middle">CHANGELOG.md</text>
+
+		<line class="arrow" x1="180" y1="100" x2="210" y2="100" marker-end="url(#sf-arrow)"></line>
+		<line class="arrow" x1="390" y1="100" x2="420" y2="100" marker-end="url(#sf-arrow)"></line>
+		<line class="arrow" x1="600" y1="100" x2="630" y2="100" marker-end="url(#sf-arrow)"></line>
+	</svg>
+	<figcaption>skill 不是程式，是「被展開到對話裡的說明書」——效果跟你自己貼那段字一樣，差別是每次都同一份、可以進 git 分享。</figcaption>
+</figure>
+
+<style>
+	.box {
+		fill: var(--sl-color-bg-nav);
+		stroke: var(--sl-color-gray-4);
+		stroke-width: 1.5;
+	}
+	.box.accent {
+		stroke: var(--sl-color-accent);
+	}
+	.box-title {
+		fill: var(--sl-color-white);
+		font-size: 15px;
+		font-weight: 600;
+	}
+	.box-sub {
+		fill: var(--sl-color-gray-2);
+		font-size: 12.5px;
+	}
+	.box-sub.mono {
+		font-family: var(--sl-font-mono, monospace);
+	}
+	.arrow {
+		stroke: var(--sl-color-accent);
+		stroke-width: 2;
+	}
+	.arrow-head {
+		fill: var(--sl-color-accent);
+	}
+</style>

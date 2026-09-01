@@ -1,0 +1,77 @@
+---
+/** 第 3 章概念圖：苦工留在 subagent 自己的 context，主對話只收結論。 */
+---
+
+<figure class="cc-diagram">
+	<svg viewBox="0 0 720 300" role="img" aria-label="主對話派任務給 subagent，subagent 讀很多檔案後只回一段結論的示意圖">
+		<defs>
+			<marker id="sa-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+				<path d="M 0 0 L 10 5 L 0 10 z" class="arrow-head"></path>
+			</marker>
+		</defs>
+
+		<rect class="box accent" x="30" y="70" width="250" height="160" rx="12"></rect>
+		<text class="box-title" x="155" y="108" text-anchor="middle">主對話</text>
+		<text class="box-sub" x="155" y="136" text-anchor="middle">你的 context 保持乾淨</text>
+		<text class="box-sub" x="155" y="162" text-anchor="middle">只收到十行結論</text>
+
+		<rect class="box" x="420" y="40" width="270" height="220" rx="12"></rect>
+		<text class="box-title" x="555" y="76" text-anchor="middle">subagent（reviewer）</text>
+		<text class="box-sub" x="555" y="102" text-anchor="middle">自己的 context、自己的工具</text>
+
+		<rect class="pile" x="450" y="122" width="210" height="30" rx="6"></rect>
+		<rect class="pile" x="450" y="160" width="210" height="30" rx="6"></rect>
+		<rect class="pile" x="450" y="198" width="210" height="30" rx="6"></rect>
+		<text class="pile-text" x="555" y="142" text-anchor="middle">讀了一個又一個檔案…</text>
+		<text class="pile-text" x="555" y="180" text-anchor="middle">幾萬 token 的內容</text>
+		<text class="pile-text" x="555" y="218" text-anchor="middle">全部留在這個房間裡</text>
+
+		<line class="arrow" x1="284" y1="110" x2="414" y2="110" marker-end="url(#sa-arrow)"></line>
+		<text class="arrow-label" x="349" y="98" text-anchor="middle">派任務</text>
+		<line class="arrow back" x1="414" y1="196" x2="284" y2="196" marker-end="url(#sa-arrow)"></line>
+		<text class="arrow-label" x="349" y="226" text-anchor="middle">只回結論（摘要）</text>
+	</svg>
+	<figcaption>翻十個檔案的苦工在 subagent 的房間裡做完，主對話只收到最後那段結論。</figcaption>
+</figure>
+
+<style>
+	.box {
+		fill: var(--sl-color-bg-nav);
+		stroke: var(--sl-color-gray-4);
+		stroke-width: 1.5;
+	}
+	.box.accent {
+		stroke: var(--sl-color-accent);
+	}
+	.box-title {
+		fill: var(--sl-color-white);
+		font-size: 17px;
+		font-weight: 600;
+	}
+	.box-sub {
+		fill: var(--sl-color-gray-2);
+		font-size: 14px;
+	}
+	.pile {
+		fill: var(--sl-color-gray-6, var(--sl-color-black));
+		stroke: var(--sl-color-gray-4);
+	}
+	.pile-text {
+		fill: var(--sl-color-gray-3);
+		font-size: 13px;
+	}
+	.arrow {
+		stroke: var(--sl-color-accent);
+		stroke-width: 2;
+	}
+	.arrow.back {
+		stroke-dasharray: 6 5;
+	}
+	.arrow-head {
+		fill: var(--sl-color-accent);
+	}
+	.arrow-label {
+		fill: var(--sl-color-gray-2);
+		font-size: 14px;
+	}
+</style>

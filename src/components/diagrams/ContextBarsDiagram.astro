@@ -1,0 +1,70 @@
+---
+/** 第 2 章原理圖：同一件事，主對話自己做 vs 派 subagent，事後 context 差多少。 */
+---
+
+<figure class="cc-diagram">
+	<svg viewBox="0 0 720 270" role="img" aria-label="主對話自己讀十個檔案會留下三萬 token；派 subagent 只留下三百 token 的結論">
+		<text class="row-label" x="16" y="34">主對話自己讀十個檔</text>
+		<rect class="seg task" x="16" y="48" width="56" height="34" rx="6"></rect>
+		<text class="seg-text" x="44" y="70" text-anchor="middle">任務</text>
+		<rect class="seg heavy" x="76" y="48" width="560" height="34" rx="6"></rect>
+		<text class="seg-text" x="356" y="70" text-anchor="middle">10 個檔案的內容 ≈ 30,000 token</text>
+		<text class="hint" x="16" y="108">之後的每一句對話，都背著這三萬 token 一起送出去——又慢、又貴、又干擾判斷。</text>
+
+		<text class="row-label" x="16" y="152">派 subagent 去讀</text>
+		<rect class="seg task" x="16" y="166" width="56" height="34" rx="6"></rect>
+		<text class="seg-text" x="44" y="188" text-anchor="middle">任務</text>
+		<rect class="seg light" x="76" y="166" width="90" height="34" rx="6"></rect>
+		<text class="seg-text" x="121" y="188" text-anchor="middle">結論 ≈ 300</text>
+
+		<rect class="room" x="430" y="140" width="270" height="96" rx="10"></rect>
+		<text class="room-title" x="565" y="168" text-anchor="middle">subagent 的房間</text>
+		<text class="hint" x="565" y="192" text-anchor="middle">30,000 token 在這裡讀完</text>
+		<text class="hint" x="565" y="214" text-anchor="middle">做完整個房間就收掉</text>
+
+		<text class="hint" x="16" y="260">主對話事後只背 300 token——差一百倍，而且結論以外的雜訊全部不進來。</text>
+	</svg>
+	<figcaption>context 是有價格的：留在主對話裡的每個 token，之後每一輪都要再付一次。</figcaption>
+</figure>
+
+<style>
+	.row-label {
+		fill: var(--sl-color-white);
+		font-size: 15px;
+		font-weight: 600;
+	}
+	.seg {
+		stroke-width: 1.5;
+	}
+	.seg.task {
+		fill: var(--sl-color-bg-nav);
+		stroke: var(--sl-color-gray-4);
+	}
+	.seg.heavy {
+		fill: var(--sl-color-accent-low);
+		stroke: var(--sl-color-accent);
+	}
+	.seg.light {
+		fill: var(--sl-color-bg-nav);
+		stroke: var(--sl-color-green);
+	}
+	.seg-text {
+		fill: var(--sl-color-white);
+		font-size: 13px;
+	}
+	.room {
+		fill: none;
+		stroke: var(--sl-color-gray-4);
+		stroke-width: 1.5;
+		stroke-dasharray: 6 5;
+	}
+	.room-title {
+		fill: var(--sl-color-white);
+		font-size: 14px;
+		font-weight: 600;
+	}
+	.hint {
+		fill: var(--sl-color-gray-3);
+		font-size: 13px;
+	}
+</style>

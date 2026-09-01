@@ -1,17 +1,37 @@
 ---
 title: 第 4 章 hooks
-description: 裝一個 PreToolUse hook（去機密版 spec-gate），親眼看到它擋下一次 Edit。
+description: 裝一個 PreToolUse hook（spec-gate），親眼看到它擋下一次 Edit。
 ---
 
 import { Steps, Aside } from '@astrojs/starlight/components';
 import Exercise from '../../components/Exercise.astro';
 import Checklist from '../../components/Checklist.astro';
+import ResetNote from '../../components/ResetNote.astro';
+import HookDiagram from '../../components/diagrams/HookDiagram.astro';
+import HookTimelineDiagram from '../../components/diagrams/HookTimelineDiagram.astro';
+import TermDemo from '../../components/TermDemo.astro';
 
 ## 用途
 
+<p class="one-liner">一句話：hook 是掛在固定時機的程式閘門——提示詞是「請它不要」，hook 是「它做不到」。</p>
+
+<HookDiagram />
+
 Hook 是 Claude Code 在特定時機**一定會執行**的程式：工具呼叫前、工具呼叫後、session 開始、你送出提示詞時……你可以掛一支 shell 指令或腳本上去，它讀到當下的資料（例如要改哪個檔），決定放行還是擋下。
-它跟提示詞、CLAUDE.md 最大的差別是**確定性**：提示詞是「請它不要」，hook 是「它做不到」。「src/ 底下沒有規格文件就不准改」這種規則寫進 CLAUDE.md 只是建議，寫成 PreToolUse hook 就是閘門——Claude 要 Edit 的那一刻被擋下，還會收到你寫的理由。
-本章要你裝一個去機密版的 **spec-gate**，然後故意觸發它，看它把一次 Edit 擋下來。
+它跟提示詞、CLAUDE.md 最大的差別是**確定性**。「src/ 底下沒有規格文件就不准改」這種規則寫進 CLAUDE.md 只是建議；寫成 PreToolUse hook 就是閘門——Claude 要 Edit 的那一刻被擋下，還會收到你寫的理由。
+本章要你裝一個簡化版的 **spec-gate**，然後故意觸發它，看它把一次 Edit 擋下來。
+
+### 原理：一次工具呼叫的時間線
+
+<HookTimelineDiagram />
+
+拿本章的 spec-gate 走一遍完整的時間線。你要求「在 src/todo.py 加一行註解」，Claude 決定呼叫 Edit——就在 Edit 真正執行**之前**，Claude Code 先把一份 JSON 從 stdin 塞給你的腳本：
+
+- 腳本讀到 `tool_input.file_path` 是 `…/src/todo.py`，算出相對路徑落在 `src/` 底下；
+- 查 `SPEC.md`——**不存在**：往 stderr 印「已擋下：src/ 受 SPEC 保護」，`exit 2`。Edit **根本沒有執行**，那行理由被送回給 Claude，它只能停下來回報你。
+- 你自己建了 `SPEC.md` 之後再來一次——這次腳本查到檔案**存在**：印一行 `[spec-gate] skip: SPEC.md 存在`，`exit 0`，Edit 照常執行。
+
+注意兩個關鍵：閘門卡在「決定」與「執行」之間，所以擋下時檔案完全沒被碰過；擋下的理由是**你寫的文字**，Claude 會讀它、照它行動——這是你跟閘門之間唯一的溝通管道，值得寫清楚。
 
 ## 什麼時候用
 
@@ -80,7 +100,20 @@ Claude Code 把一份 JSON 從 **stdin** 送給你的腳本，PreToolUse 至少�
 
 在 `claude` 裡打 `/hooks` 會列出目前生效的所有 hook、來自哪一層設定、指令是什麼。改完 `settings.json` 之後用它確認有沒有讀到。
 
-### 團隊真實案例：spec-gate（去機密版）
+### 常見配方
+
+學會本章的閘門之後，這四個是最常見的變化型（[官方 hooks 指南](https://code.claude.com/docs/en/hooks-guide)有完整範例）：
+
+| 想要 | 事件＋matcher | 做法 |
+| --- | --- | --- |
+| 擋掉危險指令 | `PreToolUse` ＋ `Bash` | 檢查 `tool_input.command` 有沒有 `rm -rf` 之類的模式，有就 exit 2 |
+| 改完自動 format | `PostToolUse` ＋ `Edit\|Write` | 對剛改過的檔跑 formatter；事後事件擋不了，但保證每次都跑 |
+| 留稽核紀錄 | `PostToolUse`（不設 matcher） | 每次工具呼叫寫一行 log，之後可回查 |
+| 測試沒過不准收工 | `Stop` | 跑測試，失敗就 exit 2 擋住回合結束；連續擋 8 次會被強制放行 |
+
+順帶一提，[官方也建議](https://code.claude.com/docs/en/best-practices#set-up-hooks)可以直接請 Claude 幫你寫 hook（「寫一個 hook，每次 Edit 之後跑 eslint」）——寫完自己讀過、重開 `claude` 生效。本章帶你手寫一次，是為了讓你看懂它收到什麼、怎麼回，之後請 Claude 寫你才驗得動。
+
+### 實務案例：spec-gate
 
 一個團隊的規則是「產品碼沒有已確認的規格文件不准改」。他們把它做成 PreToolUse hook：讀 `tool_input.file_path`，算出相對於專案根目錄的路徑，如果落在受保護的目錄而規格檔不存在，就印理由到 stderr 並 `exit 2`。
 本章的版本把規則簡化成一句：**`src/` 底下沒有 `SPEC.md` 就不准改**。腳本另一個值得學的地方：每條「放行」路徑都在 stderr 留一行 `[spec-gate] skip: <原因>`，不靜默吞例外——閘門壞了你才看得出來。
@@ -95,19 +128,34 @@ Claude Code 把一份 JSON 從 **stdin** 送給你的腳本，PreToolUse 至少�
 
 <Steps>
 
-0. **起點**：把 repo 重置回乾淨的 `main`（在 repo 根目錄執行）。
+1. **起點**：把 repo 重置回乾淨的 `main`（在 repo 根目錄執行）。
 
    ```bash
-   git merge --abort 2>/dev/null; git checkout -f main && git reset --hard origin/main && git clean -fd && git worktree prune
+   git merge --abort 2>/dev/null
+   git checkout -f main && git reset --hard origin/main
+   git clean -fd && git worktree prune
    ```
 
-1. **步驟 0.5**：如果這個目錄還沒接受過信任對話，先 `claude` 接受再 `/exit`。
+   <ResetNote />
 
-2. **在終端機（不在 Claude 裡）**貼兩個檔案。先是設定（與練習 repo 的 `solutions/ch4-hooks/.claude/settings.json` 相同）：
+2. **信任資料夾**：如果這個目錄還沒接受過信任對話，先 `claude` 接受再 `/exit`。
+
+3. **在終端機（不在 Claude 裡）**貼兩個檔案。先是設定（與練習 repo 的 `solutions/ch4-hooks/.claude/settings.json` 相同，內容就是上面「事件與 matcher」那段）：
 
    ```bash
    cat > .claude/settings.json <<'EOF'
-   {"hooks":{"PreToolUse":[{"matcher":"Edit|Write","hooks":[{"type":"command","command":"python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/spec_gate.py\""}]}]}}
+   {
+     "hooks": {
+       "PreToolUse": [
+         {
+           "matcher": "Edit|Write",
+           "hooks": [
+             { "type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/spec_gate.py\"" }
+           ]
+         }
+       ]
+     }
+   }
    EOF
    ```
 
@@ -116,7 +164,7 @@ Claude Code 把一份 JSON 從 **stdin** 送給你的腳本，PreToolUse 至少�
    ```bash
    cat > .claude/hooks/spec_gate.py <<'EOF'
    #!/usr/bin/env python3
-   """PreToolUse hook：src/ 底下沒有 SPEC.md 就不准改（去機密的「spec-gate」概念版）。
+   """PreToolUse hook：src/ 底下沒有 SPEC.md 就不准改（「spec-gate」概念版）。
 
    Claude Code 會把 JSON 送到 stdin（tool_name、tool_input.file_path、cwd）。
    擋下＝stderr 印原因、exit 2；其他情況一律 exit 0，
@@ -186,19 +234,19 @@ Claude Code 把一份 JSON 從 **stdin** 送給你的腳本，PreToolUse 至少�
    EOF
    ```
 
-3. 建完 `.claude/` 檔案要重開：`claude` 還開著先 `/exit`，然後 `claude`。開好先打 `/hooks`，確認 **PreToolUse** 底下列出 `Edit|Write` 與 `spec_gate.py`。
+4. 建完 `.claude/` 檔案要重開：`claude` 還開著先 `/exit`，然後 `claude`。開好先打 `/hooks`，確認 **PreToolUse** 底下列出 `Edit|Write` 與 `spec_gate.py`。
 
    ```bash
    claude
    ```
 
-4. 整段貼這個提示詞，故意觸發閘門：
+5. 整段貼這個提示詞，故意觸發閘門：
 
    ```text
    只用 Edit 工具在 src/todo.py 最上面加一行註解，不要用 shell 指令改檔；若被 hook 擋下就停下來回報我，不要建任何檔案
    ```
 
-5. 看到它回報被擋之後，**你自己**（在終端機，不是請 Claude）建規格檔，再下一次同樣的提示詞：
+6. 看到它回報被擋之後，**你自己**（在終端機，不是請 Claude）建規格檔，再下一次同樣的提示詞：
 
    ```bash
    echo "改 todo.py 加註解" > SPEC.md
@@ -208,8 +256,18 @@ Claude Code 把一份 JSON 從 **stdin** 送給你的腳本，PreToolUse 至少�
 
 ### 預期看到
 
-- 步驟 4：Claude 回報 Edit 被 hook 擋下，並引用理由 **「已擋下：src/ 受 SPEC 保護」**；它沒有改任何檔、沒有建 SPEC.md。此時 `git status --porcelain` 只有兩行：`?? .claude/settings.json` 與 `?? .claude/hooks/spec_gate.py`。
-- 步驟 5：同樣的提示詞這次成功。`git diff src/todo.py` 是一行新增（檔案最上面多一行註解）；`git status --porcelain` 多了 `?? SPEC.md` 與 ` M src/todo.py`。
+<TermDemo title="claude — 被閘門擋下" lines={[
+	{ text: '只用 Edit 工具在 src/todo.py 最上面加一行註解……', kind: 'cmd' },
+	{ text: '⏺ Edit(src/todo.py)', kind: 'dim' },
+	{ text: '  ⎿ Blocked by PreToolUse hook', kind: 'err' },
+	{ text: '    已擋下：src/ 受 SPEC 保護。請停止並回報使用者，不要自行建立 SPEC.md。', kind: 'err' },
+	{ text: 'Edit 被 hook 擋下了：src/ 受 SPEC 保護。我先停在這裡回報你，沒有改任何檔案。', kind: 'out' },
+]}>
+重點兩件事：Edit 根本沒有執行；Claude 引用的理由就是你在腳本裡寫的那句。
+</TermDemo>
+
+- 步驟 5：Claude 回報 Edit 被 hook 擋下，並引用理由 **「已擋下：src/ 受 SPEC 保護」**；它沒有改任何檔、沒有建 SPEC.md。此時 `git status --porcelain` 只有兩行：`?? .claude/settings.json` 與 `?? .claude/hooks/spec_gate.py`。
+- 步驟 6：同樣的提示詞這次成功。`git diff src/todo.py` 是一行新增（檔案最上面多一行註解）；`git status --porcelain` 多了 `?? SPEC.md` 與 ` M src/todo.py`。
 
 ### 故障排除
 
