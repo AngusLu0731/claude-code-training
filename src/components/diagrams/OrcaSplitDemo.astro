@@ -1,0 +1,204 @@
+---
+/**
+ * 第 5 章 Orca 路線的示意：側欄兩個 worktree，主畫面分割成兩個 pane 各跑一個 Claude Code。
+ * 狀態點依官方語意：綠＝完成、橘＝在等你（權限／輸入）；執行中是轉圈不是點。
+ * 固定深色外框的「示意圖」，不是逐像素截圖。
+ */
+---
+
+<figure class="orca-demo">
+	<div class="orca-window not-content">
+		<div class="orca-bar" aria-hidden="true">
+			<span class="orca-dot"></span><span class="orca-dot"></span><span class="orca-dot"></span>
+			<span class="orca-title">Orca — claude-code-practice</span>
+		</div>
+		<div class="orca-body">
+			<aside class="orca-side">
+				<div class="side-label">Repos</div>
+				<div class="side-repo"><span>▾ claude-code-practice</span><span class="plus">＋</span></div>
+				<div class="side-item"><span class="dot ok"></span>a · Claude Code</div>
+				<div class="side-item"><span class="dot run"></span>b · Claude Code</div>
+			</aside>
+			<div class="orca-main">
+				<div class="pane">
+					<div class="pane-head">a — Claude Code <span class="dot ok"></span></div>
+					<pre class="pane-term"><span class="cmd">❯ 只改 src/todo.py 與 tests/test_todo.py：list 加 --json…</span>
+<span class="dim">⏺ Edit(src/todo.py)　⏺ Bash(python3 -m unittest)</span>
+<span class="ok-text">已 commit：feat: list 加 --json 輸出</span></pre>
+				</div>
+				<div class="pane">
+					<div class="pane-head">b — Claude Code <span class="dot run"></span></div>
+					<pre class="pane-term"><span class="cmd">❯ 只改 README.md 加三個使用範例…</span>
+<span class="dim">⏺ Edit(README.md)</span>
+<span class="wait">等你核准：Bash(git commit …)</span></pre>
+				</div>
+			</div>
+		</div>
+	</div>
+	<figcaption class="orca-caption"><span class="orca-tag">示意圖</span><slot /></figcaption>
+</figure>
+
+<style>
+	.orca-demo {
+		margin: 1.25rem 0;
+	}
+	.orca-window {
+		overflow-x: auto;
+	}
+	.orca-bar {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		min-width: 24rem;
+		padding: 0.5rem 0.75rem;
+		background: #1c2128;
+		border: 1px solid #30363d;
+		border-bottom: none;
+		border-radius: 0.6rem 0.6rem 0 0;
+	}
+	.orca-dot {
+		width: 0.65rem;
+		height: 0.65rem;
+		border-radius: 50%;
+		background: #3d444d;
+	}
+	.orca-title {
+		margin-inline-start: 0.5rem;
+		font-size: 0.75rem;
+		color: #8b949e;
+		font-family: var(--sl-font-mono, monospace);
+	}
+	.orca-body {
+		display: flex;
+		min-width: 24rem;
+		background: #10141a;
+		border: 1px solid #30363d;
+		border-radius: 0 0 0.6rem 0.6rem;
+		font-size: var(--sl-text-sm);
+		line-height: 1.7;
+	}
+	.orca-side {
+		flex: 0 0 10.5rem;
+		min-width: 0;
+		padding: 0.75rem;
+		border-inline-end: 1px solid #30363d;
+	}
+	.side-label {
+		font-size: 0.7rem;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: #767f89;
+	}
+	.side-repo {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-top: 0.35rem;
+		color: #e6edf3;
+		font-weight: 600;
+	}
+	.plus {
+		padding: 0 0.45rem;
+		border: 1px solid #30363d;
+		border-radius: 0.35rem;
+		color: #8b949e;
+		font-weight: 700;
+	}
+	.side-item {
+		display: flex;
+		align-items: center;
+		gap: 0.45rem;
+		margin-top: 0.4rem;
+		padding-inline-start: 1rem;
+		color: #c9d1d9;
+		font-family: var(--sl-font-mono, monospace);
+	}
+	.orca-main {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.6rem;
+		padding: 0.75rem;
+	}
+	.pane {
+		flex: 1 1 9rem;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		background: #0d1117;
+		border: 1px solid #30363d;
+		border-radius: 0.45rem;
+	}
+	.pane-head {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		padding: 0.25rem 0.6rem;
+		border-bottom: 1px solid #30363d;
+		color: #e6edf3;
+		font-weight: 600;
+		font-family: var(--sl-font-mono, monospace);
+		font-size: 0.78rem;
+	}
+	.pane-head .dot {
+		margin-inline-start: auto;
+	}
+	.pane-term {
+		margin: 0;
+		padding: 0.5rem 0.6rem;
+		background: transparent;
+		font-size: 0.72rem;
+		line-height: 1.7;
+		overflow: hidden;
+	}
+	.pane-term span {
+		display: block;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.cmd {
+		color: #e6edf3;
+		font-weight: 600;
+	}
+	.dim {
+		color: #767f89;
+	}
+	.ok-text {
+		color: #56d364;
+	}
+	.wait {
+		color: #f0946a;
+	}
+	.dot {
+		flex: 0 0 auto;
+		width: 0.55rem;
+		height: 0.55rem;
+		border-radius: 50%;
+	}
+	.dot.ok {
+		background: #56d364;
+	}
+	.dot.run {
+		background: #f0946a;
+	}
+	.orca-caption {
+		margin-top: 0.5rem;
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-3);
+	}
+	.orca-caption :global(p) {
+		display: inline;
+		margin: 0;
+	}
+	.orca-tag {
+		display: inline-block;
+		margin-inline-end: 0.5rem;
+		padding: 0 0.45rem;
+		border: 1px solid var(--sl-color-hairline);
+		border-radius: 999px;
+		font-size: 0.72rem;
+		color: var(--sl-color-gray-2);
+	}
+</style>

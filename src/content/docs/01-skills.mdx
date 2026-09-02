@@ -3,13 +3,14 @@ title: 第 1 章 skills
 description: 寫一個 .claude/skills/changelog/SKILL.md，用 /changelog 叫起來。
 ---
 
-import { Steps, Aside } from '@astrojs/starlight/components';
+import { Steps, Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 import Exercise from '../../components/Exercise.astro';
 import Checklist from '../../components/Checklist.astro';
 import ResetNote from '../../components/ResetNote.astro';
 import SkillCompare from '../../components/diagrams/SkillCompare.astro';
 import SkillFlowDiagram from '../../components/diagrams/SkillFlowDiagram.astro';
 import TermDemo from '../../components/TermDemo.astro';
+import OrcaLauncherDemo from '../../components/diagrams/OrcaLauncherDemo.astro';
 
 ## 用途
 
@@ -111,7 +112,12 @@ skill 是一個**資料夾**，不是一份檔。SKILL.md 保持精簡（官方�
 
 <Steps>
 
-1. **起點**：第一次做就 clone（首頁「共用步驟」做過就跳過 clone）；要重做這一章，用第二段把 repo 重置回乾淨的 `main`。
+1. **起點**：
+
+   <Tabs syncKey="tool">
+   <TabItem label="CLI">
+
+   第一次做就 clone（首頁「共用步驟」做過就跳過 clone）；要重做這一章，用第二段把 repo 重置回乾淨的 `main`。
 
    ```bash
    git clone https://github.com/AngusLu0731/claude-code-practice.git
@@ -128,9 +134,21 @@ skill 是一個**資料夾**，不是一份檔。SKILL.md 保持精簡（官方�
 
    <ResetNote />
 
-2. **信任資料夾**：如果這個目錄還沒接受過信任對話，先 `claude` 接受再 `/exit`。
+   </TabItem>
+   <TabItem label="Orca">
 
-3. **在終端機（不是 Claude 裡）**貼這個檔案到 `.claude/skills/changelog/SKILL.md`（與練習 repo 的 `solutions/ch1-skills/.claude/skills/changelog/SKILL.md` 相同）：
+   按 repo 名旁的 **＋** 開一個新 worktree（例如 `ch1-skills`），起點用預設的 main，agent 選 **Claude Code**——worktree 從乾淨的 main 長出來，不需要 reset 指令。要重做這一章：在側欄刪掉這個 worktree（會連目錄與分支一起刪）再開一個新的。本章之後的指令都在這個 worktree 的終端機分頁執行。
+
+   <OrcaLauncherDemo task="ch1-skills">
+   本章的起點：＋ → 任務名 `ch1-skills` → agent 選 Claude Code。第 2 到 4 章同樣模式，只是任務名不同。
+   </OrcaLauncherDemo>
+
+   </TabItem>
+   </Tabs>
+
+2. **信任資料夾**：CLI 路線：這個目錄還沒接受過信任對話的話，先 `claude` 接受再 `/exit`。Orca 路線：worktree 一開 agent 就自動啟動了，信任對話直接出現（新 worktree 是獨立目錄，會再問一次），選 **Yes** 即可。
+
+3. **在終端機（不是 Claude 裡）**貼這個檔案到 `.claude/skills/changelog/SKILL.md`（與練習 repo 的 `solutions/ch1-skills/.claude/skills/changelog/SKILL.md` 相同；Orca：按 **Cmd-T** 在這個 worktree 開一個新終端機分頁來貼）：
 
    ````bash
    mkdir -p .claude/skills/changelog
@@ -175,11 +193,24 @@ skill 是一個**資料夾**，不是一份檔。SKILL.md 保持精簡（官方�
    EOF
    ````
 
-4. 建完 `.claude/` 檔案要重開：`claude` 還開著先 `/exit`，然後：
+4. 建完 `.claude/` 檔案，保險起見重開一次（skills 其實有即時偵測、通常不重開也找得到；hooks 與 workflow 才一定要重開）：
+
+   <Tabs syncKey="tool">
+   <TabItem label="CLI">
+
+   `claude` 還開著先 `/exit`，然後：
 
    ```bash
    claude
    ```
+
+   </TabItem>
+   <TabItem label="Orca">
+
+   在 agent 的終端機打 `/exit`，然後按分頁上的 **Restart** 重開同一個 agent（同一個 worktree、同一個目錄）。
+
+   </TabItem>
+   </Tabs>
 
 5. 打 `/changelog`（輸入 `/` 時清單裡應該看得到它，旁邊有 `[since-ref]` 的提示）。
 
@@ -200,7 +231,7 @@ skill 是一個**資料夾**，不是一份檔。SKILL.md 保持精簡（官方�
 橘色那行「（changelog skill v1）」＝SKILL.md 正文被展開的證據；日期與條目依你的 git log 而定。
 </TermDemo>
 
-- 送出 `/changelog` 後，對話裡展開的內容第一句是 **「（changelog skill v1）」**——那是 SKILL.md 正文被載入的證據。
+- 送出 `/changelog` 後，對話裡展開的內容第一句是 **「（changelog skill v1）」**——那是 SKILL.md 正文被載入的證據（版面上沒看到的話，按 **ctrl+o** 展開對話逐字稿找）。
 - Claude 跑 `git log --oneline`，依 type 分組，寫入 `CHANGELOG.md`，並把那段印給你看。
 - `git status --porcelain` 出現 `?? CHANGELOG.md`；打開檔案第一行是 `## Unreleased (今天日期)`，底下是 `### feat`、`### docs` 之類的分組條目。
 
@@ -222,7 +253,7 @@ skill 是一個**資料夾**，不是一份檔。SKILL.md 保持精簡（官方�
 
 <Checklist items={[
   { id: 'ch1-ex1-1', text: '.claude/skills/changelog/SKILL.md 貼好、重開後 / 清單看得到 changelog' },
-  { id: 'ch1-ex1-2', text: '/changelog 展開的內容第一句是「（changelog skill v1）」' },
+  { id: 'ch1-ex1-2', text: '/changelog 後看得到「（changelog skill v1）」（必要時 ctrl+o 展開逐字稿）' },
   { id: 'ch1-ex1-3', text: 'git status 出現 ?? CHANGELOG.md，內容有 ## Unreleased 與分組條目' },
 ]} />
 

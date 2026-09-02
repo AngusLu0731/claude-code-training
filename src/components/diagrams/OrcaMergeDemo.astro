@@ -1,0 +1,160 @@
+---
+/**
+ * 第 5 章收斂步驟的示意：這是 Orca 路線唯一離開 Orca 的一步——
+ * 左邊 Orca 視窗（a、b 都綠了＝可以收斂），右邊系統終端機在主 checkout 跑 merge。
+ * 固定深色外框的「示意圖」，不是逐像素截圖。
+ */
+---
+
+<figure class="orca-demo">
+	<div class="merge-row not-content">
+		<div class="mini-window orca-win">
+			<div class="mini-bar"><span class="mini-dot"></span><span class="mini-dot"></span><span class="mini-dot"></span><span class="mini-title">Orca</span></div>
+			<div class="mini-body">
+				<div class="side-label">Repos</div>
+				<div class="side-repo">▾ claude-code-practice</div>
+				<div class="side-item"><span class="dot ok"></span>a · Claude Code</div>
+				<div class="side-item"><span class="dot ok"></span>b · Claude Code</div>
+				<div class="side-hint">a、b 都綠了＝已 commit</div>
+			</div>
+		</div>
+		<div class="mini-window">
+			<div class="mini-bar"><span class="mini-dot"></span><span class="mini-dot"></span><span class="mini-dot"></span><span class="mini-title">系統終端機 — 主 checkout</span></div>
+			<pre class="mini-term"><span class="cmd">❯ cd ~/claude-code-practice</span>
+<span class="cmd">❯ git merge --no-ff a &amp;&amp; git merge --no-ff b</span>
+<span class="out">Merge made by the 'ort' strategy.</span>
+<span class="cmd">❯ python3 -m unittest -v</span>
+<span class="ok-text">OK</span></pre>
+		</div>
+	</div>
+	<figcaption class="orca-caption"><span class="orca-tag">示意圖</span><slot /></figcaption>
+</figure>
+
+<style>
+	.orca-demo {
+		margin: 1.25rem 0;
+	}
+	.merge-row {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.75rem;
+	}
+	.mini-window {
+		flex: 1 1 15rem;
+		min-width: 0;
+	}
+	.orca-win {
+		flex: 0 1 13rem;
+	}
+	.mini-bar {
+		display: flex;
+		align-items: center;
+		gap: 0.35rem;
+		padding: 0.4rem 0.6rem;
+		background: #1c2128;
+		border: 1px solid #30363d;
+		border-bottom: none;
+		border-radius: 0.6rem 0.6rem 0 0;
+	}
+	.mini-dot {
+		width: 0.55rem;
+		height: 0.55rem;
+		border-radius: 50%;
+		background: #3d444d;
+	}
+	.mini-title {
+		margin-inline-start: 0.4rem;
+		font-size: 0.72rem;
+		color: #8b949e;
+		font-family: var(--sl-font-mono, monospace);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.mini-body {
+		padding: 0.6rem 0.75rem;
+		background: #10141a;
+		border: 1px solid #30363d;
+		border-radius: 0 0 0.6rem 0.6rem;
+		font-size: var(--sl-text-sm);
+		line-height: 1.7;
+	}
+	.side-label {
+		font-size: 0.7rem;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: #767f89;
+	}
+	.side-repo {
+		margin-top: 0.3rem;
+		color: #e6edf3;
+		font-weight: 600;
+	}
+	.side-item {
+		display: flex;
+		align-items: center;
+		gap: 0.45rem;
+		margin-top: 0.35rem;
+		padding-inline-start: 1rem;
+		color: #c9d1d9;
+		font-family: var(--sl-font-mono, monospace);
+	}
+	.side-hint {
+		margin-top: 0.5rem;
+		font-size: 0.72rem;
+		color: #767f89;
+	}
+	.mini-term {
+		margin: 0;
+		padding: 0.6rem 0.75rem;
+		background: #10141a;
+		border: 1px solid #30363d;
+		border-radius: 0 0 0.6rem 0.6rem;
+		font-size: 0.72rem;
+		line-height: 1.8;
+		overflow: hidden;
+	}
+	.mini-term span {
+		display: block;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.cmd {
+		color: #e6edf3;
+		font-weight: 600;
+	}
+	.out {
+		color: #c9d1d9;
+	}
+	.ok-text {
+		color: #56d364;
+	}
+	.dot {
+		flex: 0 0 auto;
+		width: 0.55rem;
+		height: 0.55rem;
+		border-radius: 50%;
+	}
+	.dot.ok {
+		background: #56d364;
+	}
+	.orca-caption {
+		margin-top: 0.5rem;
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-3);
+	}
+	.orca-caption :global(p) {
+		display: inline;
+		margin: 0;
+	}
+	.orca-tag {
+		display: inline-block;
+		margin-inline-end: 0.5rem;
+		padding: 0 0.45rem;
+		border: 1px solid var(--sl-color-hairline);
+		border-radius: 999px;
+		font-size: 0.72rem;
+		color: var(--sl-color-gray-2);
+	}
+</style>

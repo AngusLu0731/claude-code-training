@@ -3,7 +3,7 @@ title: 第 2 章 subagent
 description: 建一個 .claude/agents/reviewer.md，派它審一個檔，拿回附行號的回報。
 ---
 
-import { Steps, Aside } from '@astrojs/starlight/components';
+import { Steps, Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 import Exercise from '../../components/Exercise.astro';
 import Checklist from '../../components/Checklist.astro';
 import ResetNote from '../../components/ResetNote.astro';
@@ -95,7 +95,12 @@ Claude Code 本來就帶著幾個內建 subagent：**Explore**（唯讀的程式
 
 <Steps>
 
-1. **起點**：把 repo 重置回乾淨的 `main`（在 repo 根目錄執行）。
+1. **起點**：
+
+   <Tabs syncKey="tool">
+   <TabItem label="CLI">
+
+   把 repo 重置回乾淨的 `main`（在 repo 根目錄執行）。
 
    ```bash
    git merge --abort 2>/dev/null
@@ -105,9 +110,17 @@ Claude Code 本來就帶著幾個內建 subagent：**Explore**（唯讀的程式
 
    <ResetNote />
 
-2. **信任資料夾**：如果這個目錄還沒接受過信任對話，先 `claude` 接受再 `/exit`。
+   </TabItem>
+   <TabItem label="Orca">
 
-3. **在終端機（不是 Claude 裡）**貼這個檔案到 `.claude/agents/reviewer.md`（與練習 repo 的 `solutions/ch2-subagent/.claude/agents/reviewer.md` 相同）：
+   按 repo 名旁的 **＋** 開一個新 worktree（例如 `ch2-subagent`），起點用預設的 main，agent 選 **Claude Code**——worktree 就是乾淨的起點，不需要 reset 指令。要重做這一章：刪掉這個 worktree 再開一個新的。本章之後的指令都在這個 worktree 的終端機分頁執行。
+
+   </TabItem>
+   </Tabs>
+
+2. **信任資料夾**：CLI 路線：這個目錄還沒接受過信任對話的話，先 `claude` 接受再 `/exit`。Orca 路線：worktree 一開 agent 就自動啟動、信任對話直接出現，選 **Yes** 即可。
+
+3. **在終端機（不是 Claude 裡）**貼這個檔案到 `.claude/agents/reviewer.md`（與練習 repo 的 `solutions/ch2-subagent/.claude/agents/reviewer.md` 相同；Orca：**Cmd-T** 開新終端機分頁來貼）：
 
    ````bash
    cat > .claude/agents/reviewer.md <<'EOF'
@@ -139,11 +152,24 @@ Claude Code 本來就帶著幾個內建 subagent：**Explore**（唯讀的程式
    EOF
    ````
 
-4. 建完任何 `.claude/` 檔案都要重開：`claude` 還開著先 `/exit`，然後：
+4. 建完 `.claude/` 檔案，保險起見重開一次（agents 其實有即時偵測、通常不重開也找得到；hooks 與 workflow 才一定要重開）：
+
+   <Tabs syncKey="tool">
+   <TabItem label="CLI">
+
+   `claude` 還開著先 `/exit`，然後：
 
    ```bash
    claude
    ```
+
+   </TabItem>
+   <TabItem label="Orca">
+
+   在 agent 的終端機打 `/exit`，然後按分頁上的 **Restart** 重開同一個 agent。
+
+   </TabItem>
+   </Tabs>
 
 5. 點名派它：
 
@@ -195,7 +221,7 @@ Claude Code 本來就帶著幾個內建 subagent：**Explore**（唯讀的程式
   建議改 os.environ.get("TODO_FILE") or ".todo.json"。
 ```
 
-你的回報內容不會一模一樣（模型每次找到的點不同），但**每一筆都帶 `src/todo.py:行號`**、而且 `git status` 沒有任何檔被改，這兩點應該一致。
+你的回報內容不會一模一樣（模型每次找到的點不同；這次實跑它還自己加了分級標題、一筆寫成多行——超出 reviewer.md 規定的「每筆一行」，想收得更緊就把「不要加標題、一筆只准一行」寫進回報格式那段），但**每一筆都帶 `src/todo.py:行號`**、而且 `git status` 沒有任何檔被改，這兩點應該一致。
 
 <Checklist items={[
   { id: 'ch2-ex1-1', text: '.claude/agents/reviewer.md 貼好、重開後 @agent-reviewer 選得到' },

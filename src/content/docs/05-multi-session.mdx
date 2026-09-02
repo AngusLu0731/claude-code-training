@@ -1,14 +1,17 @@
 ---
 title: 第 5 章 多 session 多工
-description: 用 --worktree 讓多個 Claude Code session 各做各的，最後在主 checkout 收斂。
+description: 用 --worktree 或 Orca 讓多個 Claude Code session 各做各的，最後在主 checkout 收斂。
 ---
 
-import { Steps, Aside } from '@astrojs/starlight/components';
+import { Steps, Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 import Exercise from '../../components/Exercise.astro';
 import Checklist from '../../components/Checklist.astro';
 import ResetNote from '../../components/ResetNote.astro';
 import WorktreeDiagram from '../../components/diagrams/WorktreeDiagram.astro';
 import ClashTimelineDiagram from '../../components/diagrams/ClashTimelineDiagram.astro';
+import OrcaSplitDemo from '../../components/diagrams/OrcaSplitDemo.astro';
+import OrcaDeleteDemo from '../../components/diagrams/OrcaDeleteDemo.astro';
+import OrcaMergeDemo from '../../components/diagrams/OrcaMergeDemo.astro';
 import TermDemo from '../../components/TermDemo.astro';
 
 ## 用途
@@ -23,7 +26,7 @@ import TermDemo from '../../components/TermDemo.astro';
 - **互相排隊**：第二件事要等第一件做完才能開始。
 
 多 session 多工就是「一件事一個 session」，讓它們**同時**進行。難點不在開很多視窗，而在**不要互相踩檔**。
-`claude --worktree` 解決踩檔：它用 git worktree 幫每個 session 開一份**獨立的目錄影本**與分支，各做各的，最後由你在主 checkout（你平常工作的那份目錄）把成果 merge 回來——這一章就在練這件事。
+`claude --worktree` 解決踩檔：它用 git worktree 幫每個 session 開一份**獨立的目錄影本**與分支，各做各的，最後由你在主 checkout（你平常工作的那份目錄）把成果 merge 回來——這一章就在練這件事。走 Orca 路線的話，同一件事由它的 worktree 面板代勞：每個任務天生就是一個 worktree，本章正是 Orca 整個產品圍繞的工作模式。
 
 ### 原理：為什麼同一個目錄會互相蓋檔
 
@@ -43,7 +46,7 @@ claude-code-practice/            ← 主 checkout（main 分支）
         └── src/todo.py
 ```
 
-三份 `todo.py` 各自獨立，A、B 怎麼寫都不會碰到彼此；每份影本各在自己的分支上 commit，最後由你回主 checkout 用 merge 把兩條分支的成果**有紀錄地**合起來——衝突了 git 會告訴你，而不是默默消失。
+三份 `todo.py` 各自獨立，A、B 怎麼寫都不會碰到彼此；每份影本各在自己的分支上 commit，最後由你回主 checkout 用 merge 把兩條分支的成果**有紀錄地**合起來——衝突了 git 會告訴你，而不是默默消失。（上圖的目錄是 CLI 路線的樣子；Orca 把 worktree 放在它自己管理的位置、分支名是任務名——目錄位置不同，隔離的原理完全一樣。）
 
 ## 什麼時候用
 
@@ -75,12 +78,28 @@ session A 實作一個功能；開 session B（乾淨的 context）請它審 A �
 
 ### 開一個 worktree session
 
+<Tabs syncKey="tool">
+<TabItem label="CLI">
+
 ```bash
 claude --worktree <name>
 ```
 
 Claude Code 會在 repo 根目錄下建 `.claude/worktrees/<name>/`（一份獨立的工作目錄），並開一條新分支 `worktree-<name>`，然後在那個目錄裡啟動 session。`-w` 是同一件事的縮寫。
 同名再開一次，會直接進既有的 worktree。它預設從 repo 的預設分支（通常是 `main`）長出來，所以每個 worktree 的起點都是乾淨的。
+
+</TabItem>
+<TabItem label="Orca">
+
+Orca 是 worktree 原生的：按 repo 名旁的 **＋**、輸入任務名，就是「開一個 worktree ＋ 一個 agent」。它用 `git worktree` 建一份獨立目錄與一條分支（分支名**預設**就是你取的任務名），agent 下拉選 **Claude Code** 後，session 直接在那個目錄裡啟動。
+把 worktree 的分頁拖到畫面右緣或下緣可以分割視窗——CLI 路線要開兩個終端機視窗的事，在 Orca 裡是同一個視窗並排的兩個 pane，每個 agent 的狀態點還會告訴你它是**在等你**（橘：權限或輸入）還是**做完了**（綠）；執行中是轉圈。
+
+<OrcaSplitDemo>
+本章練習在 Orca 裡的樣子：側欄兩個 worktree，主畫面分割成兩個 pane 各跑一個 Claude Code。綠＝完成；橘＝在等你——像這裡的 b 在等 commit 的權限核准，別傻等，去點它。UI 文字以你裝到的版本為準。
+</OrcaSplitDemo>
+
+</TabItem>
+</Tabs>
 
 ### 一個 session 一件事
 
@@ -97,7 +116,10 @@ git merge --no-ff worktree-b
 
 `--no-ff` 讓每個 session 的成果在 `git log --graph` 上各自成一個 merge 節點，事後看得出來哪批改動來自誰。
 
-### `/exit` 時的 keep／remove
+### worktree 的收與留
+
+<Tabs syncKey="tool">
+<TabItem label="CLI">
 
 在 worktree session 打 `/exit`，如果裡面有改動，Claude Code 會問要 **keep** 還是 **remove**：
 
@@ -105,6 +127,19 @@ git merge --no-ff worktree-b
 - **remove**：刪掉目錄與分支，**裡面沒 merge 出去的改動一起消失**。
 
 規則很簡單：已經 merge 回主 checkout 的選 remove；還沒的選 keep。
+
+</TabItem>
+<TabItem label="Orca">
+
+worktree 是 Orca 開的，所以 `/exit` 只是結束 Claude Code session，**不會**出現 keep／remove 的提問——目錄與分支都還在，之後隨時可以在同一個 worktree 再開 agent 繼續。
+生命週期由你在側欄管理：右鍵刪除 worktree 會**連目錄與分支一起刪**（有確認對話），沒 merge 出去的改動也跟著消失。規則跟 CLI 一樣：已經 merge 回主 checkout 的可以刪；還沒的留著。
+
+<OrcaDeleteDemo>
+側欄右鍵 worktree → Delete＝CLI 路線 `/exit` 選 remove 的對應動作：連目錄與分支一起刪，刪之前先確認 merge 回主 checkout 了沒。
+</OrcaDeleteDemo>
+
+</TabItem>
+</Tabs>
 
 ### 實務案例：長流程與小修並行
 
@@ -129,7 +164,12 @@ done
 
 <Steps>
 
-1. **起點**：第一次做就 clone；已經 clone 過、或要重做這一章，用第二段把前一次留下的 worktree、分支與 merge 結果清掉。
+1. **起點**：
+
+   <Tabs syncKey="tool">
+   <TabItem label="CLI">
+
+   第一次做就 clone；已經 clone 過、或要重做這一章，用第二段把前一次留下的 worktree、分支與 merge 結果清掉。
 
    ```bash
    git clone https://github.com/AngusLu0731/claude-code-practice.git
@@ -150,47 +190,151 @@ done
 
    <ResetNote />
 
-2. **信任資料夾**：第一次在這個目錄開 `claude`，接受信任對話後 `/exit`。已經做過就跳過。
+   </TabItem>
+   <TabItem label="Orca">
+
+   repo 已在首頁「共用步驟」用 **Add Repo** 加進 Orca。要**重做**這一章：先在側欄刪掉上次的 `a`、`b` 兩個 worktree（會連分支一起刪），再開一個**系統終端機**到主 checkout（你 clone 的那個目錄）把 merge 結果清掉：
+
+   ```bash
+   git merge --abort 2>/dev/null
+   git checkout -f main && git reset --hard origin/main
+   git clean -fd && git worktree prune
+   ```
+
+   本章「收斂」與「清理」這幾步要在主 checkout 做，最單純的做法就是旁邊開著這個系統終端機備用。
+
+   </TabItem>
+   </Tabs>
+
+2. **信任資料夾**：
+
+   <Tabs syncKey="tool">
+   <TabItem label="CLI">
+
+   第一次在這個目錄開 `claude`，接受信任對話後 `/exit`。已經做過就跳過。
 
    ```bash
    claude
    ```
 
-3. **終端機 A**：開 worktree `a`，整段貼這個提示詞。
+   </TabItem>
+   <TabItem label="Orca">
+
+   這一步不用做——worktree 第一次啟動 agent 時才會問信任，到步驟 3 再選 **Yes** 就好（收斂用的系統終端機只跑 git，不會碰到信任對話）。
+
+   </TabItem>
+   </Tabs>
+
+3. **session A**：開 worktree `a`。
+
+   <Tabs syncKey="tool">
+   <TabItem label="CLI">
+
+   開一個終端機，在 repo 根目錄：
 
    ```bash
    claude --worktree a
    ```
 
+   </TabItem>
+   <TabItem label="Orca">
+
+   按 repo 名旁的 **＋**，任務名取 `a`，起點用預設的 main，agent 選 **Claude Code**——它會自動啟動，第一次會問信任，選 **Yes**（Orca 建的分支名預設就是 `a`）。
+
+   </TabItem>
+   </Tabs>
+
+   開好後整段貼這個提示詞：
+
    ```text
    只改 src/todo.py 與 tests/test_todo.py：list 加 --json 輸出（印出 JSON 陣列，每筆含 text 與 done）並補測試，不要動 README，做完只 commit 不要 push
    ```
 
-4. **終端機 B**：再開一個終端機，`cd` 到同一個 repo，開 worktree `b`，整段貼這個提示詞。
+4. **session B**：再開 worktree `b`。
+
+   <Tabs syncKey="tool">
+   <TabItem label="CLI">
+
+   再開一個終端機，`cd` 到同一個 repo：
 
    ```bash
    claude --worktree b
    ```
 
+   </TabItem>
+   <TabItem label="Orca">
+
+   再按一次 **＋**，任務名取 `b`，agent 一樣選 **Claude Code**。把 `b` 的分頁拖到畫面右緣，跟 `a` 並排——兩個 session 同時在眼前跑。
+
+   </TabItem>
+   </Tabs>
+
+   開好後整段貼這個提示詞：
+
    ```text
    只改 README.md 加三個使用範例，不要動 src/ 與 tests/，做完只 commit 不要 push
    ```
 
-5. **終端機 C（主 checkout）**：等 A、B 都回報「已 commit」，再開第三個終端機，在 repo 根目錄（不是 `.claude/worktrees/` 底下）收斂：
+5. **收斂（主 checkout）**：等 A、B 都回報「已 commit」再動手。
+
+   <Tabs syncKey="tool">
+   <TabItem label="CLI">
+
+   開第三個終端機，在 repo 根目錄（不是 `.claude/worktrees/` 底下）：
 
    ```bash
    git merge --no-ff worktree-a && git merge --no-ff worktree-b && python3 -m unittest -v
    ```
 
-6. 回終端機 A、B 各打 `/exit`。它會問 keep／remove，選 **remove**——成果已經 merge 進 `main`，刪掉是安全的。
+   </TabItem>
+   <TabItem label="Orca">
 
-7. 在主 checkout 確認乾淨——選 remove 時 Claude Code 已經連分支一起刪了，**不用**再 `git branch -d`：
+   用步驟 1 開好的系統終端機，在主 checkout 執行——Orca 建的分支名預設就是任務名 `a`、`b`（不確定就先 `git branch` 看一眼）：
+
+   ```bash
+   git merge --no-ff a && git merge --no-ff b && python3 -m unittest -v
+   ```
+
+   <OrcaMergeDemo>
+   全章唯一離開 Orca 的一步：Orca 視窗留著（a、b 都綠了＝已 commit），merge 在旁邊的系統終端機、你 clone 的主 checkout 目錄裡做。
+   </OrcaMergeDemo>
+
+   </TabItem>
+   </Tabs>
+
+6. 收掉兩個 worktree：
+
+   <Tabs syncKey="tool">
+   <TabItem label="CLI">
+
+   回終端機 A、B 各打 `/exit`。它會問 keep／remove，選 **remove**——成果已經 merge 進 `main`，刪掉是安全的。
+
+   </TabItem>
+   <TabItem label="Orca">
+
+   在 A、B 的終端機各打 `/exit` 結束 session（不會問 keep／remove），然後在側欄刪掉 `a`、`b` 兩個 worktree——會連目錄與分支一起刪，成果已經 merge 進 `main`，刪掉是安全的。
+
+   </TabItem>
+   </Tabs>
+
+7. 在主 checkout 確認乾淨：
 
    ```bash
    git worktree prune && git worktree list && git branch
    ```
 
-   如果剛才選的是 **keep**，目錄與分支都還在，要自己收：`git worktree remove .claude/worktrees/a && git branch -d worktree-a`（`b` 同理）。
+   <Tabs syncKey="tool">
+   <TabItem label="CLI">
+
+   選 remove 時 Claude Code 已經連分支一起刪了，**不用**再 `git branch -d`。如果剛才選的是 **keep**，目錄與分支都還在，要自己收：`git worktree remove .claude/worktrees/a && git branch -d worktree-a`（`b` 同理）。
+
+   </TabItem>
+   <TabItem label="Orca">
+
+   側欄刪除已經連目錄與分支一起收掉了，這段只是最後確認：`git worktree list` 應只剩主 checkout 一行，`git branch` 沒有 `a`、`b`。
+
+   </TabItem>
+   </Tabs>
 
 </Steps>
 
@@ -212,10 +356,10 @@ done
 兩個 merge 節點＋17 個測試 OK＝這一章的完成證明。hash 與測試秒數每次不同。
 </TermDemo>
 
-- 步驟 5 的 merge 沒有衝突；`python3 -m unittest -v` 最後幾行是 `Ran 17 tests`（或更多——`main` 本來有 16 個，A 每補一個測試就加一）與 `OK`。看到 `OK (skipped=1)` 也算過：那是比對教材站原始碼的測試，單獨 clone 練習 repo 時會跳過。
-- `git log --oneline --graph` 最上面有**兩個 merge 節點**（`Merge branch 'worktree-a'`、`Merge branch 'worktree-b'`）。
+- 步驟 5 的 merge 沒有衝突；`python3 -m unittest -v` 最後幾行是 `Ran 17 tests`（或更多——`main` 本來有 16 個，A 每補一個測試就加一）與 `OK`。看到 `OK (skipped=1)` 也算過：那是比對教材站原始碼的測試，單獨 clone 練習 repo 時會跳過（機器沒裝 node 的話會再多跳一個，`skipped=2` 也正常）。
+- `git log --oneline --graph` 最上面有**兩個 merge 節點**（CLI 路線是 `Merge branch 'worktree-a'`、`Merge branch 'worktree-b'`；Orca 路線分支名預設是任務名，會是 `Merge branch 'a'`、`Merge branch 'b'`——結構相同，只有名字不同）。
 - `python3 src/todo.py list --json` 印出 JSON（空清單就是 `[]`）。
-- 步驟 7 之後 `git worktree list` 只剩主 checkout一行，`git branch` 沒有 `worktree-a`、`worktree-b`。
+- 步驟 7 之後 `git worktree list` 只剩主 checkout 一行，`git branch` 沒有 `worktree-a`、`worktree-b`（Orca 路線：沒有 `a`、`b`）。
 
 ### 故障排除
 
@@ -224,14 +368,15 @@ done
 - **B 動了 src/**：提示詞邊界沒寫清楚，這是本章要你學到的事——把「不要動 src/ 與 tests/」寫進去再來一次。
 - **A 或 B 的 session 中途關掉、還沒 commit**：再打一次 `claude --worktree a`（或 `b`）會直接回到同一個 worktree，跟它說「繼續，做完只 commit 不要 push」。
 - **merge 做到一半失敗**：`git merge --abort` 回到 merge 前的狀態；兩個 worktree 與分支都還在，修好再做一次步驟 5。
-- **`claude --worktree a` 說目錄已存在**：那是前一次留下的。想接著做就直接進去；想從乾淨起點重做，先跑步驟 1 的「已 clone／重跑」那一段。
 - **想整章重做**：步驟 1 的「已 clone／重跑」那一段就是為此準備的，它只清 `a`、`b` 與 `main` 上的練習結果。
+- **Orca：不確定收斂指令該在哪裡跑**：收斂（步驟 5）與清理（步驟 1、7）都在主 checkout 做，最單純的做法是開一個系統終端機到你 clone 的目錄執行。
+- **Orca：merge 說找不到分支 `a`**：Orca 建的分支名以它實際取的為準，先在主 checkout `git branch` 看一眼，用看到的名字 merge。
 
 <Checklist items={[
   { id: 'ch5-ex1-1', text: '兩個 worktree session 同時在跑，各自只碰自己被分派的檔案' },
   { id: 'ch5-ex1-2', text: '主 checkout 兩次 merge 都沒衝突，git log --graph 有兩個 merge 節點' },
   { id: 'ch5-ex1-3', text: 'python3 -m unittest -v 顯示 OK，list --json 有輸出' },
-  { id: 'ch5-ex1-4', text: '/exit 選 remove、prune 後 git worktree list 只剩主 checkout' },
+  { id: 'ch5-ex1-4', text: '收掉 a、b（CLI：/exit 選 remove；Orca：側欄刪除）後 git worktree list 只剩主 checkout' },
 ]} />
 
 </Exercise>

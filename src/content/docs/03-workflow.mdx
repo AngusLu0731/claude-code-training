@@ -3,7 +3,7 @@ title: 第 3 章 workflow 定義
 description: 把自己的流程拆成站，寫成 .claude/workflows/review-flow.js，用 /review-flow 跑完一遍。
 ---
 
-import { Steps, Aside } from '@astrojs/starlight/components';
+import { Steps, Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 import Exercise from '../../components/Exercise.astro';
 import Checklist from '../../components/Checklist.astro';
 import ResetNote from '../../components/ResetNote.astro';
@@ -84,7 +84,7 @@ import { CLAUDE_CODE_VERSION } from '../../data/version';
 
 | 元素 | 作用 |
 | --- | --- |
-| `export const meta = { name, description, phases }` | `meta` 必填，裡面 `name`、`description` 必填；`name` 就是之後的 `/name`。`phases` 選填，有給的話進度畫面才會照它分組 |
+| `export const meta = { name, description, phases }` | `meta` 必填，裡面 `name`、`description` 必填；`name` 就是之後的 `/name`。`phases` 選填，對應**啟動核准提示**列出的站名（title 要跟 `phase()` 打的完全一致）；進度畫面的分組是腳本裡的 `phase()` 呼叫決定的 |
 | `phase('Review')` | 之後的 `agent()` 都歸在這一組顯示 |
 | `agent(prompt, { label, phase, schema })` | 開一個 subagent。**prompt 要自足**（它看不到主對話）；給 `schema` 就回驗證過的物件，不用自己 parse |
 | `parallel([() => agent(...), () => agent(...)])` | 同時跑、全部回來才繼續；任一個失敗會變 `null`，記得 `.filter(Boolean)` |
@@ -102,7 +102,7 @@ import { CLAUDE_CODE_VERSION } from '../../data/version';
 - **跑你自己存的**：檔案放在 `.claude/workflows/review-flow.js`，重開 `claude` 後打 `/review-flow`。這才是本章要練的。
 
 <Aside type="caution" title="不要請 Claude 幫你建這個檔">
-你一說「幫我建一個 workflow 檔」，很容易觸發它現場寫一支即席 workflow 跑起來。請用編輯器或 `cat <<'EOF'` 自己貼；真的誤觸了，按 **Option+W**（Windows／Linux 是 Alt+W）取消。
+你一說「幫我建一個 workflow 檔」，很容易觸發它現場寫一支即席 workflow 跑起來。請用編輯器或 `cat <<'EOF'` 自己貼；真的誤觸、即席 workflow 已經跑起來了，打 `/workflows` 選到那一筆按 **x** 停掉。
 </Aside>
 
 ## 你來做
@@ -111,7 +111,12 @@ import { CLAUDE_CODE_VERSION } from '../../data/version';
 
 <Steps>
 
-1. **起點**：把 repo 重置回乾淨的 `main`（在 repo 根目錄執行）。
+1. **起點**：
+
+   <Tabs syncKey="tool">
+   <TabItem label="CLI">
+
+   把 repo 重置回乾淨的 `main`（在 repo 根目錄執行）。
 
    ```bash
    git merge --abort 2>/dev/null
@@ -121,9 +126,17 @@ import { CLAUDE_CODE_VERSION } from '../../data/version';
 
    <ResetNote />
 
-2. **信任資料夾**：如果這個目錄還沒接受過信任對話，先 `claude` 接受再 `/exit`。
+   </TabItem>
+   <TabItem label="Orca">
 
-3. **在終端機（不是 Claude 裡）**貼這個檔案到 `.claude/workflows/review-flow.js`。內容與練習 repo 的 `solutions/ch3-workflow/.claude/workflows/review-flow.js` 完全相同：
+   按 repo 名旁的 **＋** 開一個新 worktree（例如 `ch3-workflow`），起點用預設的 main，agent 選 **Claude Code**——worktree 就是乾淨的起點，不需要 reset 指令。要重做這一章：刪掉這個 worktree 再開一個新的。本章之後的指令都在這個 worktree 的終端機分頁執行。
+
+   </TabItem>
+   </Tabs>
+
+2. **信任資料夾**：CLI 路線：這個目錄還沒接受過信任對話的話，先 `claude` 接受再 `/exit`。Orca 路線：worktree 一開 agent 就自動啟動、信任對話直接出現，選 **Yes** 即可。
+
+3. **在終端機（不是 Claude 裡）**貼這個檔案到 `.claude/workflows/review-flow.js`。內容與練習 repo 的 `solutions/ch3-workflow/.claude/workflows/review-flow.js` 完全相同（Orca：**Cmd-T** 開新終端機分頁來貼）：
 
    ```bash
    cat > .claude/workflows/review-flow.js <<'EOF'
@@ -178,11 +191,24 @@ import { CLAUDE_CODE_VERSION } from '../../data/version';
    EOF
    ```
 
-4. 建完任何 `.claude/` 檔案都要重開：如果 `claude` 還開著先 `/exit`，然後：
+4. 建完任何 `.claude/` 檔案都要重開：
+
+   <Tabs syncKey="tool">
+   <TabItem label="CLI">
+
+   如果 `claude` 還開著先 `/exit`，然後：
 
    ```bash
    claude
    ```
+
+   </TabItem>
+   <TabItem label="Orca">
+
+   在 agent 的終端機打 `/exit`，然後按分頁上的 **Restart** 重開同一個 agent（workflow 在 session 啟動時載入，這一步不能省）。
+
+   </TabItem>
+   </Tabs>
 
 5. 打 `/review-flow`。第一次會出現核准提示（列出 Review、Synthesize 兩個 phase），選 **Yes, run it**；auto 模式且之前核准過會直接開始。
 

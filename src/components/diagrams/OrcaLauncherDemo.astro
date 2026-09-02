@@ -1,0 +1,209 @@
+---
+/**
+ * Orca 路線的固定開場示意：側欄按 ＋ → launcher 取任務名、選起點、agent 選 Claude Code。
+ * 跟 TermDemo 一樣是固定深色外框的「示意圖」，示意流程重點，不是逐像素截圖。
+ * task：launcher 裡顯示的任務名，各章可帶自己的（預設 a）。
+ */
+interface Props {
+	task?: string;
+}
+const { task = 'a' } = Astro.props;
+---
+
+<figure class="orca-demo">
+	<div class="orca-window not-content">
+		<div class="orca-bar" aria-hidden="true">
+			<span class="orca-dot"></span><span class="orca-dot"></span><span class="orca-dot"></span>
+			<span class="orca-title">Orca — claude-code-practice</span>
+		</div>
+		<div class="orca-body">
+			<aside class="orca-side">
+				<div class="side-label">Repos</div>
+				<div class="side-repo">
+					<span class="repo-name">▾ claude-code-practice</span>
+					<span class="plus"><span class="badge">1</span>＋</span>
+				</div>
+				<div class="side-item dim">（開好的 worktree 會列在這裡）</div>
+			</aside>
+			<div class="orca-main">
+				<div class="launcher">
+					<div class="launcher-title">New worktree</div>
+					<div class="field"><span class="badge">2</span><span class="field-label">任務名</span><span class="input">{task}</span></div>
+					<div class="field"><span class="badge ghost"></span><span class="field-label">起點</span><span class="input">main ▾</span></div>
+					<div class="field"><span class="badge">3</span><span class="field-label">Agent</span><span class="input accent">Claude Code ▾</span></div>
+					<div class="create">Create</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<figcaption class="orca-caption"><span class="orca-tag">示意圖</span><slot /></figcaption>
+</figure>
+
+<style>
+	.orca-demo {
+		margin: 1.25rem 0;
+	}
+	.orca-window {
+		overflow-x: auto;
+	}
+	.orca-bar {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		min-width: 24rem;
+		padding: 0.5rem 0.75rem;
+		background: #1c2128;
+		border: 1px solid #30363d;
+		border-bottom: none;
+		border-radius: 0.6rem 0.6rem 0 0;
+	}
+	.orca-dot {
+		width: 0.65rem;
+		height: 0.65rem;
+		border-radius: 50%;
+		background: #3d444d;
+	}
+	.orca-title {
+		margin-inline-start: 0.5rem;
+		font-size: 0.75rem;
+		color: #8b949e;
+		font-family: var(--sl-font-mono, monospace);
+	}
+	.orca-body {
+		display: flex;
+		min-width: 24rem;
+		background: #10141a;
+		border: 1px solid #30363d;
+		border-radius: 0 0 0.6rem 0.6rem;
+		font-size: var(--sl-text-sm);
+		line-height: 1.7;
+	}
+	.orca-side {
+		flex: 0 0 11rem;
+		min-width: 0;
+		padding: 0.75rem;
+		border-inline-end: 1px solid #30363d;
+	}
+	.side-label {
+		font-size: 0.7rem;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: #767f89;
+	}
+	.side-repo {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-top: 0.35rem;
+		color: #e6edf3;
+		font-weight: 600;
+	}
+	.plus {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		padding: 0 0.45rem;
+		border: 1px solid #f0946a;
+		border-radius: 0.35rem;
+		color: #f0946a;
+		font-weight: 700;
+	}
+	.side-item {
+		margin-top: 0.4rem;
+		padding-inline-start: 1rem;
+	}
+	.dim {
+		color: #767f89;
+	}
+	.orca-main {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 1rem;
+	}
+	.launcher {
+		width: 100%;
+		max-width: 17rem;
+		padding: 0.75rem 0.9rem;
+		background: #161b22;
+		border: 1px solid #30363d;
+		border-radius: 0.55rem;
+	}
+	.launcher-title {
+		color: #e6edf3;
+		font-weight: 600;
+		margin-bottom: 0.5rem;
+	}
+	.field {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin-top: 0.4rem;
+	}
+	.field-label {
+		flex: 0 0 3.2rem;
+		color: #8b949e;
+	}
+	.input {
+		flex: 1;
+		min-width: 0;
+		padding: 0.05rem 0.5rem;
+		background: #0d1117;
+		border: 1px solid #30363d;
+		border-radius: 0.35rem;
+		color: #c9d1d9;
+		font-family: var(--sl-font-mono, monospace);
+		font-size: 0.78rem;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.input.accent {
+		border-color: #f0946a;
+		color: #f0946a;
+	}
+	.badge {
+		flex: 0 0 1.1rem;
+		height: 1.1rem;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border: 1px solid #f0946a;
+		border-radius: 50%;
+		color: #f0946a;
+		font-size: 0.7rem;
+		font-weight: 700;
+		line-height: 1;
+	}
+	.badge.ghost {
+		visibility: hidden;
+	}
+	.create {
+		margin-top: 0.6rem;
+		text-align: center;
+		padding: 0.15rem 0;
+		background: #f0946a;
+		border-radius: 0.35rem;
+		color: #10141a;
+		font-weight: 700;
+	}
+	.orca-caption {
+		margin-top: 0.5rem;
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-3);
+	}
+	.orca-caption :global(p) {
+		display: inline;
+		margin: 0;
+	}
+	.orca-tag {
+		display: inline-block;
+		margin-inline-end: 0.5rem;
+		padding: 0 0.45rem;
+		border: 1px solid var(--sl-color-hairline);
+		border-radius: 999px;
+		font-size: 0.72rem;
+		color: var(--sl-color-gray-2);
+	}
+</style>

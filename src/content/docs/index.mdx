@@ -6,8 +6,10 @@ head:
     content: Claude Code 進階實作教材
 ---
 
-import { Steps, Aside } from '@astrojs/starlight/components';
+import { Steps, Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 import Progress from '../../components/Progress.astro';
+import OrcaLauncherDemo from '../../components/diagrams/OrcaLauncherDemo.astro';
+import OrcaAgentDemo from '../../components/diagrams/OrcaAgentDemo.astro';
 import { CLAUDE_CODE_VERSION, VERIFIED_ON } from '../../data/version';
 
 <div class="home-hero">
@@ -36,10 +38,44 @@ import { CLAUDE_CODE_VERSION, VERIFIED_ON } from '../../data/version';
 - `python3 --version` 顯示 **3.9 或更新**（練習 repo 只用標準函式庫，不用裝套件）。
 - 有 `git`。
 
+### 選一條路：CLI 或 Orca
+
+全站的操作步驟提供兩條等價的路，帶分頁的區塊點一下就能切換；選擇會記住並同步到全站的所有分頁：
+
+- **CLI**：直接在系統終端機開 `claude`。什麼都不用多裝。
+- **Orca**：在 [Orca](https://www.onorca.dev/)（開源的 Agent Development Environment，桌面應用）裡跑 Claude Code。它的核心概念是「一個任務一個 git worktree」，每個 worktree 有自己的終端機與 agent——到第 5 章你會發現它把整章要手動做的事變成了 UI。
+
+兩條路跑的是**同一個 Claude Code**：Orca 直接沿用 `~/.claude` 的登入與設定，`.claude/` 專案檔、`/指令`、subagent、hooks 全部相同。所以只有「怎麼開出一個 session、怎麼重置起點」的區塊有分頁；提示詞、檔案內容、`/指令` 兩條路共用。
+
+<Tabs syncKey="tool">
+<TabItem label="CLI">
+
+不用額外安裝。在終端機 `cd` 到 repo、打 `claude`，就是一個 session。
+
+</TabItem>
+<TabItem label="Orca">
+
+先裝 Orca（macOS 用 Homebrew；其他平台到[下載頁](https://www.onorca.dev/download)），前提是 `claude` CLI 已裝好並登入過一次：
+
+```bash
+brew install --cask stablyai/orca/orca
+```
+
+第一次啟動會要求家目錄的存取權（用來加 repo），並提議匯入既有的 `~/.claude` 設定——同意即可，Claude Code 的登入直接沿用。之後的固定模式：側欄 **Add Repo** 加入本機 checkout → 按 repo 名旁的 **＋** 開一個 worktree（輸入任務名，起點用預設的 main）→ agent 下拉選 **Claude Code**，Orca 會自動啟動它。進到 worktree 之後，提示詞、檔案內容、`/指令` 都跟 CLI 相同；要下 shell 指令（貼檔案）就按 **Cmd-T** 在同一個 worktree 開新終端機分頁，agent 結束後按分頁上的 **Restart** 重開。
+
+<OrcaLauncherDemo>
+每章 Orca 路線的固定開場：① 按 repo 旁的 ＋ → ② 取任務名、起點用預設的 main → ③ agent 選 Claude Code。UI 文字以你裝到的版本為準。
+</OrcaLauncherDemo>
+
+</TabItem>
+</Tabs>
+
+各章「起點」的重置也依路線不同：CLI 用 reset 指令把 repo 洗回乾淨的 `main`；Orca 直接**開一個新 worktree**——它本來就從乾淨的 main 長出來，重做一章＝刪掉舊 worktree、再開一個新的。
+
 ### 三件先講清楚的事
 
 <Aside type="caution" title="請在終端機執行 claude">
-本站所有步驟都在終端機執行 `claude`。VS Code 或 Desktop 使用者請開一個終端機照做，畫面才會跟站上一致；IDE 面板的按鈕與提示文字不同，容易對不上。
+本站所有步驟都在終端機執行 `claude`——直接開系統終端機（CLI 路線），或用 Orca 內建的終端機（Orca 路線）都可以，兩者畫面一致。VS Code 或 Desktop 使用者請開一個終端機照做；IDE 面板的按鈕與提示文字不同，容易對不上。
 </Aside>
 
 <Aside type="note" title="權限模式不同，提示就不同">
@@ -54,20 +90,37 @@ auto／manual 權限模式看到的提示不一樣（有人會被問「要不要
 
 <Steps>
 
-1. 把練習 repo clone 下來，之後五章都在這個目錄裡做：
+1. 把練習 repo clone 下來，之後五章都在這個目錄裡做（Orca 路線也一樣需要這份本機 checkout）：
 
    ```bash
    git clone https://github.com/AngusLu0731/claude-code-practice.git
    cd claude-code-practice
    ```
 
-2. 第一次在這個目錄開 `claude`，會出現「要不要信任這個資料夾」的對話，選 **Yes**：
+2. 開出第一個 session，接受信任對話：
+
+   <Tabs syncKey="tool">
+   <TabItem label="CLI">
+
+   第一次在這個目錄開 `claude`，會出現「要不要信任這個資料夾」的對話，選 **Yes**：
 
    ```bash
    claude
    ```
 
-3. 看到提示符就可以打 `/exit` 離開。信任只需要接受一次；之後每章都會請你重開 `claude`，那時不會再問。
+   </TabItem>
+   <TabItem label="Orca">
+
+   開 Orca，側欄按 **Add Repo** 選剛 clone 的 `claude-code-practice`，再按 repo 名旁的 **＋** 開一個 worktree（名字隨意，例如 `hello`），agent 選 **Claude Code**——Orca 會自動啟動它，不用自己打 `claude`。終端機裡出現「要不要信任這個資料夾」的對話，選 **Yes**。
+
+   <OrcaAgentDemo>
+   worktree 一開，Orca 就自動啟動 Claude Code——信任對話直接出現在終端機裡，畫面跟 CLI 路線一致。
+   </OrcaAgentDemo>
+
+   </TabItem>
+   </Tabs>
+
+3. 看到提示符就可以打 `/exit` 離開。CLI 路線信任只要接受這一次，之後重開不會再問；Orca 路線每個新 worktree 是獨立目錄，第一次進去會再被問一次，一樣選 Yes 就好（這個試水用的 worktree 之後可以在側欄右鍵刪掉）。
 
 </Steps>
 

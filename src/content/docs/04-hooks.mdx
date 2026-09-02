@@ -3,7 +3,7 @@ title: 第 4 章 hooks
 description: 裝一個 PreToolUse hook（spec-gate），親眼看到它擋下一次 Edit。
 ---
 
-import { Steps, Aside } from '@astrojs/starlight/components';
+import { Steps, Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 import Exercise from '../../components/Exercise.astro';
 import Checklist from '../../components/Checklist.astro';
 import ResetNote from '../../components/ResetNote.astro';
@@ -128,7 +128,12 @@ Claude Code 把一份 JSON 從 **stdin** 送給你的腳本，PreToolUse 至少�
 
 <Steps>
 
-1. **起點**：把 repo 重置回乾淨的 `main`（在 repo 根目錄執行）。
+1. **起點**：
+
+   <Tabs syncKey="tool">
+   <TabItem label="CLI">
+
+   把 repo 重置回乾淨的 `main`（在 repo 根目錄執行）。
 
    ```bash
    git merge --abort 2>/dev/null
@@ -138,9 +143,17 @@ Claude Code 把一份 JSON 從 **stdin** 送給你的腳本，PreToolUse 至少�
 
    <ResetNote />
 
-2. **信任資料夾**：如果這個目錄還沒接受過信任對話，先 `claude` 接受再 `/exit`。
+   </TabItem>
+   <TabItem label="Orca">
 
-3. **在終端機（不在 Claude 裡）**貼兩個檔案。先是設定（與練習 repo 的 `solutions/ch4-hooks/.claude/settings.json` 相同，內容就是上面「事件與 matcher」那段）：
+   按 repo 名旁的 **＋** 開一個新 worktree（例如 `ch4-hooks`），起點用預設的 main，agent 選 **Claude Code**——worktree 就是乾淨的起點，不需要 reset 指令。要重做這一章：刪掉這個 worktree 再開一個新的。本章之後的指令都在這個 worktree 的終端機分頁執行。
+
+   </TabItem>
+   </Tabs>
+
+2. **信任資料夾**：CLI 路線：這個目錄還沒接受過信任對話的話，先 `claude` 接受再 `/exit`。Orca 路線：worktree 一開 agent 就自動啟動、信任對話直接出現，選 **Yes** 即可。
+
+3. **在終端機（不在 Claude 裡；Orca：Cmd-T 開新終端機分頁）**貼兩個檔案。先是設定（與練習 repo 的 `solutions/ch4-hooks/.claude/settings.json` 相同，內容就是上面「事件與 matcher」那段）：
 
    ```bash
    cat > .claude/settings.json <<'EOF'
@@ -234,11 +247,26 @@ Claude Code 把一份 JSON 從 **stdin** 送給你的腳本，PreToolUse 至少�
    EOF
    ```
 
-4. 建完 `.claude/` 檔案要重開：`claude` 還開著先 `/exit`，然後 `claude`。開好先打 `/hooks`，確認 **PreToolUse** 底下列出 `Edit|Write` 與 `spec_gate.py`。
+4. 建完 `.claude/` 檔案要重開：
+
+   <Tabs syncKey="tool">
+   <TabItem label="CLI">
+
+   `claude` 還開著先 `/exit`，然後：
 
    ```bash
    claude
    ```
+
+   </TabItem>
+   <TabItem label="Orca">
+
+   在 agent 的終端機打 `/exit`，然後按分頁上的 **Restart** 重開同一個 agent（hook 設定在 session 啟動時載入，這一步不能省）。
+
+   </TabItem>
+   </Tabs>
+
+   開好先打 `/hooks`，確認 **PreToolUse** 底下列出 `Edit|Write` 與 `spec_gate.py`。
 
 5. 整段貼這個提示詞，故意觸發閘門：
 

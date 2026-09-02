@@ -1,0 +1,226 @@
+---
+/**
+ * Orca worktree 生命週期的示意：側欄右鍵 worktree → Delete（連目錄與分支一起刪，有確認對話）。
+ * 固定深色外框的「示意圖」，不是逐像素截圖。
+ */
+---
+
+<figure class="orca-demo">
+	<div class="orca-window not-content">
+		<div class="orca-bar" aria-hidden="true">
+			<span class="orca-dot"></span><span class="orca-dot"></span><span class="orca-dot"></span>
+			<span class="orca-title">Orca — claude-code-practice</span>
+		</div>
+		<div class="orca-body">
+			<aside class="orca-side">
+				<div class="side-label">Repos</div>
+				<div class="side-repo"><span>▾ claude-code-practice</span><span class="plus">＋</span></div>
+				<div class="side-item selected"><span class="dot ok"></span>a · Claude Code</div>
+				<div class="side-item"><span class="dot ok"></span>b · Claude Code</div>
+			</aside>
+			<div class="orca-main">
+				<div class="menu">
+					<div class="menu-item dim">Sleep</div>
+					<div class="menu-item dim">Archive</div>
+					<div class="menu-sep"></div>
+					<div class="menu-item danger">Delete worktree…</div>
+				</div>
+				<div class="confirm">
+					<div class="confirm-title">Delete worktree “a”?</div>
+					<div class="confirm-body">會刪掉目錄與分支 <code>a</code>，沒 merge 出去的改動一起消失。</div>
+					<div class="confirm-actions"><span class="btn dim-btn">Cancel</span><span class="btn danger-btn">Delete</span></div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<figcaption class="orca-caption"><span class="orca-tag">示意圖</span><slot /></figcaption>
+</figure>
+
+<style>
+	.orca-demo {
+		margin: 1.25rem 0;
+	}
+	.orca-window {
+		overflow-x: auto;
+	}
+	.orca-bar {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		min-width: 24rem;
+		padding: 0.5rem 0.75rem;
+		background: #1c2128;
+		border: 1px solid #30363d;
+		border-bottom: none;
+		border-radius: 0.6rem 0.6rem 0 0;
+	}
+	.orca-dot {
+		width: 0.65rem;
+		height: 0.65rem;
+		border-radius: 50%;
+		background: #3d444d;
+	}
+	.orca-title {
+		margin-inline-start: 0.5rem;
+		font-size: 0.75rem;
+		color: #8b949e;
+		font-family: var(--sl-font-mono, monospace);
+	}
+	.orca-body {
+		display: flex;
+		min-width: 24rem;
+		background: #10141a;
+		border: 1px solid #30363d;
+		border-radius: 0 0 0.6rem 0.6rem;
+		font-size: var(--sl-text-sm);
+		line-height: 1.7;
+	}
+	.orca-side {
+		flex: 0 0 10.5rem;
+		min-width: 0;
+		padding: 0.75rem;
+		border-inline-end: 1px solid #30363d;
+	}
+	.side-label {
+		font-size: 0.7rem;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: #767f89;
+	}
+	.side-repo {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-top: 0.35rem;
+		color: #e6edf3;
+		font-weight: 600;
+	}
+	.plus {
+		padding: 0 0.45rem;
+		border: 1px solid #30363d;
+		border-radius: 0.35rem;
+		color: #8b949e;
+		font-weight: 700;
+	}
+	.side-item {
+		display: flex;
+		align-items: center;
+		gap: 0.45rem;
+		margin-top: 0.4rem;
+		padding-inline-start: 1rem;
+		color: #c9d1d9;
+		font-family: var(--sl-font-mono, monospace);
+	}
+	.side-item.selected {
+		color: #e6edf3;
+		font-weight: 600;
+		background: #1c2128;
+		border-radius: 0.35rem;
+	}
+	.orca-main {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-start;
+		align-content: flex-start;
+		gap: 0.75rem;
+		padding: 0.75rem;
+	}
+	.menu {
+		flex: 0 0 auto;
+		min-width: 10rem;
+		padding: 0.3rem;
+		background: #161b22;
+		border: 1px solid #30363d;
+		border-radius: 0.45rem;
+		box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+	}
+	.menu-item {
+		padding: 0.1rem 0.6rem;
+		border-radius: 0.3rem;
+		color: #c9d1d9;
+	}
+	.menu-item.dim {
+		color: #767f89;
+	}
+	.menu-item.danger {
+		color: #f85149;
+		background: rgba(248, 81, 73, 0.12);
+		font-weight: 600;
+	}
+	.menu-sep {
+		height: 1px;
+		margin: 0.25rem 0.3rem;
+		background: #30363d;
+	}
+	.confirm {
+		flex: 1 1 12rem;
+		min-width: 0;
+		padding: 0.6rem 0.75rem;
+		background: #161b22;
+		border: 1px solid #30363d;
+		border-radius: 0.45rem;
+	}
+	.confirm-title {
+		color: #e6edf3;
+		font-weight: 600;
+	}
+	.confirm-body {
+		margin-top: 0.2rem;
+		color: #8b949e;
+		font-size: 0.78rem;
+	}
+	.confirm-body code {
+		color: #c9d1d9;
+		background: #0d1117;
+		padding: 0 0.25rem;
+		border-radius: 0.25rem;
+	}
+	.confirm-actions {
+		display: flex;
+		justify-content: flex-end;
+		gap: 0.5rem;
+		margin-top: 0.5rem;
+	}
+	.btn {
+		padding: 0.05rem 0.7rem;
+		border-radius: 0.35rem;
+		font-weight: 600;
+	}
+	.dim-btn {
+		border: 1px solid #30363d;
+		color: #8b949e;
+	}
+	.danger-btn {
+		background: #f85149;
+		color: #10141a;
+	}
+	.dot {
+		flex: 0 0 auto;
+		width: 0.55rem;
+		height: 0.55rem;
+		border-radius: 50%;
+	}
+	.dot.ok {
+		background: #56d364;
+	}
+	.orca-caption {
+		margin-top: 0.5rem;
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-3);
+	}
+	.orca-caption :global(p) {
+		display: inline;
+		margin: 0;
+	}
+	.orca-tag {
+		display: inline-block;
+		margin-inline-end: 0.5rem;
+		padding: 0 0.45rem;
+		border: 1px solid var(--sl-color-hairline);
+		border-radius: 999px;
+		font-size: 0.72rem;
+		color: var(--sl-color-gray-2);
+	}
+</style>
