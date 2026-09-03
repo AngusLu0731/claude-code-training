@@ -1,7 +1,7 @@
 /**
  * 自檢勾選持久化：勾一個 → 存 storageState → 關閉 context → 帶 state 重開仍勾、首頁 1/N；
  * 負對照：不帶 state 的新 context 未勾、首頁 0/N。分子與分母都做精確斷言（不用 toContainText，避免 10/N 也過）。
- * 另外驗證五章實際渲染出的 checkbox id 集合＝parser 算的集合＝首頁 data-total，以及 heredoc code block 渲染完整。
+ * 另外驗證五章＋期末作業實際渲染出的 checkbox id 集合＝parser 算的集合＝首頁 data-total，以及 heredoc code block 渲染完整。
  */
 import { expect, test } from '@playwright/test';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -11,11 +11,11 @@ import { collectChecklistIds } from '../../src/lib/checklist-ids';
 
 const HERE = fileURLToPath(new URL('.', import.meta.url));
 const DOCS = join(HERE, '..', '..', 'src', 'content', 'docs');
-const CHAPTERS = ['01-skills', '02-subagent', '03-workflow', '04-hooks', '05-multi-session'];
+const CHAPTERS = ['01-skills', '02-subagent', '03-workflow', '04-hooks', '05-multi-session', '06-capstone'];
 const BOX = 'progress-checklist input[type="checkbox"]';
 
 function expectedIds(): string[] {
-	const files = readdirSync(DOCS).filter((f) => /^0[1-5]-.*\.mdx$/.test(f)).sort();
+	const files = readdirSync(DOCS).filter((f) => /^0[1-6]-.*\.mdx$/.test(f)).sort();
 	return collectChecklistIds(files.map((f) => readFileSync(join(DOCS, f), 'utf8')));
 }
 
@@ -61,7 +61,7 @@ test('勾選後關閉 context、以 storageState 重開仍勾選；負對照未�
 	await fresh.close();
 });
 
-test('五章實際渲染的 checkbox id 集合＝parser 集合＝首頁 data-total', async ({ page }) => {
+test('五章＋期末作業實際渲染的 checkbox id 集合＝parser 集合＝首頁 data-total', async ({ page }) => {
 	const rendered: string[] = [];
 	for (const ch of CHAPTERS) {
 		await page.goto(`/${ch}/`);

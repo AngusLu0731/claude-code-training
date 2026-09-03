@@ -1,5 +1,6 @@
 /**
- * 教材內容結構測試：五章骨架、說明段字數、每個練習各自的必備元素與步驟 0、checklist id 唯一。
+ * 教材內容結構測試：五章骨架、說明段字數、每個練習各自的必備元素與步驟 0、checklist id 唯一；
+ * 期末作業頁另有一套規則（四段標題、五章工具都提到、不把 .claude/ 工具檔貼給讀者）。
  * 規則在 tests/lib/content-rules.ts；同一套規則也用合成章節做反向測試，證明抓得到假綠。
  * 與首頁 Progress 共用 src/lib/checklist-ids.ts 的 parser，最後印 CHECKLIST_TOTAL=<N>。
  */
@@ -10,17 +11,22 @@ import { fileURLToPath } from 'node:url';
 import { CHECKLIST_ID_PATTERN, collectChecklistIds, extractChecklistBlocks } from '../src/lib/checklist-ids';
 import { fencesClosed, maskFences } from '../src/lib/mask-fences';
 import {
+	CAPSTONE,
+	CAPSTONE_MENTIONS,
+	CAPSTONE_SECTIONS,
 	CHAPTERS,
 	CLONE_URL,
 	EXPECTED_HEADING,
 	MIN_BODY_CHARS,
 	RESET_MARK,
 	SECTIONS,
+	checkCapstone,
 	checkChapter,
 	checkExercise,
 	exerciseBlocks,
 	hasHeading,
 	headingPositions,
+	heredocTargets,
 	proseChars,
 	sectionBody,
 	stripFrontmatter,
@@ -94,15 +100,48 @@ describe('各章專屬', () => {
 	});
 });
 
+describe('期末作業（06-capstone）', () => {
+	const src = stripFrontmatter(read(CAPSTONE));
+
+	it('四段標題依序存在，規則清單為空', () => {
+		expect(existsSync(join(DOCS, `${CAPSTONE}.mdx`))).toBe(true);
+		const positions = headingPositions(src, CAPSTONE_SECTIONS);
+		for (let i = 0; i < CAPSTONE_SECTIONS.length; i += 1) expect(positions[i], CAPSTONE_SECTIONS[i]).toBeGreaterThan(i === 0 ? -1 : positions[i - 1]);
+		expect(checkCapstone(src)).toEqual([]);
+	});
+
+	it('一個 Exercise（ch6-ex1），自檢至少 8 項：五章工具各至少一項＋驗收', () => {
+		const exercises = exerciseBlocks(sectionBody(src, '## 你來做'));
+		expect(exercises.map((e) => e.id)).toEqual(['ch6-ex1']);
+		const ids = collectChecklistIds([exercises[0].body]);
+		expect(ids.length).toBeGreaterThanOrEqual(8);
+		const texts = exercises[0].masked;
+		for (const word of ['worktree', 'merge', 'doc-checker', '/ship-check', '/release', '擋下', 'CAPSTONE_OK']) expect(texts, word).toContain(word);
+	});
+
+	it('只把 SPEC.md 貼給讀者；四份工具檔一律不貼', () => {
+		const targets = heredocTargets(src);
+		expect(targets).toContain('SPEC.md');
+		expect(targets.filter((t) => t.startsWith('.claude/'))).toEqual([]);
+	});
+
+	it('反向：合成的期末作業頁貼了 .claude/ 檔案或漏提工具 → fail', () => {
+		const pasted = src.replace("cat > SPEC.md <<'EOF'", "cat > .claude/skills/release/SKILL.md <<'EOF'");
+		expect(checkCapstone(pasted).some((i) => i.includes('.claude/skills/release/SKILL.md'))).toBe(true);
+		const missing = src.split(CAPSTONE_MENTIONS[0]).join('/rel');
+		expect(checkCapstone(missing)).toContainEqual(expect.stringContaining(CAPSTONE_MENTIONS[0]));
+	});
+});
+
 describe('Checklist id', () => {
-	const sources = CHAPTERS.map((ch) => stripFrontmatter(read(ch)));
+	const sources = [...CHAPTERS, CAPSTONE].map((ch) => stripFrontmatter(read(ch)));
 	const ids = collectChecklistIds(sources);
 
-	it('全部唯一且符合 ^ch[1-5]-ex\\d+-\\d+$', () => {
+	it('全部唯一且符合 ^ch[1-6]-ex\\d+-\\d+$', () => {
 		expect(ids.length).toBeGreaterThan(0);
 		expect(new Set(ids).size, `重複：${ids.filter((id, i) => ids.indexOf(id) !== i).join(',')}`).toBe(ids.length);
 		for (const id of ids) expect(id, id).toMatch(CHECKLIST_ID_PATTERN);
-		expect(sources.flatMap(extractChecklistBlocks).length).toBeGreaterThanOrEqual(CHAPTERS.length);
+		expect(sources.flatMap(extractChecklistBlocks).length).toBeGreaterThanOrEqual(CHAPTERS.length + 1);
 	});
 
 	it('印出 CHECKLIST_TOTAL', () => {

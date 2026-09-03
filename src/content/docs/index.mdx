@@ -1,6 +1,6 @@
 ---
 title: Claude Code 進階實作教材
-description: 給已會 Claude Code 基礎的人：多 session 多工、workflow 定義、subagent、hooks、skills，五章跟著做。
+description: 給已會 Claude Code 基礎的人：多 session 多工、workflow 定義、subagent、hooks、skills，五章跟著做，最後一份期末作業把全部用上。
 head:
   - tag: title
     content: Claude Code 進階實作教材
@@ -14,7 +14,7 @@ import { CLAUDE_CODE_VERSION, VERIFIED_ON } from '../../data/version';
 
 <div class="home-hero">
 	<p class="home-tagline">
-		五個進階主題，跟著做、看到結果、勾掉自檢。
+		五個進階主題加一份期末作業，跟著做、看到結果、勾掉自檢。
 		<span class="home-topics">multi-session ・ workflow ・ subagent ・ hooks ・ skills</span>
 	</p>
 	<div class="home-actions">
@@ -25,6 +25,7 @@ import { CLAUDE_CODE_VERSION, VERIFIED_ON } from '../../data/version';
 
 這是一套「跟著做」的教材，不是講義。五個進階主題各自成章，每章固定四段：**用途**、**什麼時候用**、**基本用法**、**你來做**。
 「你來做」給你可以直接複製的指令、做完應該看到什麼、以及自檢勾選；真正的練習在你自己的終端機裡完成，網頁只負責帶路與記錄進度。
+五章之後有一份**期末作業**：不再給檔案貼，只給規格，你自己寫工具、交付一個版本，最後由驗收腳本告訴你過了沒。
 
 <Progress />
 
@@ -124,7 +125,7 @@ auto／manual 權限模式看到的提示不一樣（有人會被問「要不要
 
 </Steps>
 
-## 五章
+## 五章＋期末作業
 
 <div class="chapter-cards">
 	<a class="chapter-card" href="/01-skills/">
@@ -152,9 +153,14 @@ auto／manual 權限模式看到的提示不一樣（有人會被問「要不要
 		<span class="chapter-name">多 session 多工</span>
 		<span class="chapter-desc">兩個 worktree 分工、第三個終端機 merge 收斂</span>
 	</a>
+	<a class="chapter-card capstone" href="/06-capstone/">
+		<span class="chapter-num">期末</span>
+		<span class="chapter-name">作業：交付 v1.0.0</span>
+		<span class="chapter-desc">自己寫 hook、skill、subagent、workflow，兩個 worktree 平行，出一個版本，驗收腳本印 CAPSTONE_OK</span>
+	</a>
 </div>
 
-前三章是一條遞進鏈——**說明書（skill）→ 執行者（subagent）→ 產線（workflow）**；第 4 章把規則變成閘門，第 5 章把多個 session 平行起來。每章大約 20 到 40 分鐘，建議照章走；不過每章開頭都會把 repo 重置回乾淨狀態，跳著做也可以。
+前三章是一條遞進鏈——**說明書（skill）→ 執行者（subagent）→ 產線（workflow）**；第 4 章把規則變成閘門，第 5 章把多個 session 平行起來。每章大約 20 到 40 分鐘，建議照章走；不過每章開頭都會把 repo 重置回乾淨狀態，跳著做也可以。期末作業約 60 到 90 分鐘，五章都做過再來——它把五個工具串成一條真正的交付流程，而且工具檔要你自己寫。
 
 ### 我的問題該用哪個工具？
 
@@ -168,6 +174,7 @@ auto／manual 權限模式看到的提示不一樣（有人會被問「要不要
 | 同一套多 agent 流程，每次都要長一樣 | workflow | 第 3 章 |
 | 沒有例外的硬規則（不准改、每次必跑） | hook | 第 4 章 |
 | 兩件不相干的事要同時進行 | 多 session＋worktree | 第 5 章 |
+| 把上面五個串成一條交付流程，確認自己真的會了 | 全部 | 期末作業 |
 
 口訣：**事實進 CLAUDE.md、程序進 skill、隔離用 subagent、編排用 workflow、強制用 hook、平行開 session**。
 

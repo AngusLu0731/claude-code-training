@@ -6,11 +6,15 @@ import { collectChecklistIds } from '../../src/lib/checklist-ids';
 import { codeBlocks, fencesClosed, maskFences } from '../../src/lib/mask-fences';
 
 export const CHAPTERS = ['01-skills', '02-subagent', '03-workflow', '04-hooks', '05-multi-session'] as const;
+export const CAPSTONE = '06-capstone';
+export const CAPSTONE_SECTIONS = ['## 作業', '## 交付物', '## 規格', '## 你來做'] as const;
+/** 期末作業頁一定要提到的五章工具與驗收關鍵字。 */
+export const CAPSTONE_MENTIONS = ['/release', 'doc-checker', '/ship-check', 'push_gate.py', '--worktree', 'CAPSTONE_OK'] as const;
 export const SECTIONS = ['## 用途', '## 什麼時候用', '## 基本用法', '## 你來做'] as const;
 export const CLONE_URL = 'https://github.com/AngusLu0731/claude-code-practice.git';
 export const RESET_MARK = 'reset --hard origin/main';
 export const MIN_BODY_CHARS = 80;
-export const EXERCISE_ID = /^ch[1-5]-ex\d+$/;
+export const EXERCISE_ID = /^ch[1-6]-ex\d+$/;
 export const EXPECTED_HEADING = '### 預期看到';
 
 export type Exercise = { id: string; title: string; body: string; masked: string };
@@ -20,11 +24,11 @@ export const stripFrontmatter = (src: string) => src.replace(/^---[\s\S]*?\n---\
 /** 遮罩後再補一個前導換行，讓「檔案第一行就是標題」也能用 `\n## X\n` 定位（回傳的座標比原文多 1）。 */
 const paddedMask = (src: string) => '\n' + maskFences(src);
 
-/** 四個主標題在（補了前導換行的）遮罩原文裡的位置，找不到為 -1；只用來比順序。 */
-export function headingPositions(src: string): number[] {
+/** 各主標題在（補了前導換行的）遮罩原文裡的位置，找不到為 -1；只用來比順序。預設用五章的四段標題。 */
+export function headingPositions(src: string, headings: readonly string[] = SECTIONS): number[] {
 	const padded = paddedMask(src);
 	let cursor = -1;
-	return SECTIONS.map((heading) => {
+	return headings.map((heading) => {
 		const at = padded.indexOf(`\n${heading}\n`, cursor + 1);
 		if (at >= 0) cursor = at;
 		return at;
@@ -74,7 +78,7 @@ export const hasHeading = (src: string, re: RegExp) =>
 export function checkExercise(ex: Exercise): string[] {
 	const issues: string[] = [];
 	const tag = ex.id || '(無 id)';
-	if (!EXERCISE_ID.test(ex.id)) issues.push(`${tag}：id 不合 ^ch[1-5]-ex\\d+$`);
+	if (!EXERCISE_ID.test(ex.id)) issues.push(`${tag}：id 不合 ^ch[1-6]-ex\\d+$`);
 	if (!ex.title.trim()) issues.push(`${tag}：title 是空的`);
 	if (!fencesClosed(ex.body)) issues.push(`${tag}：code fence 沒有閉合`);
 	const blocks = codeBlocks(ex.body);
@@ -106,5 +110,37 @@ export function checkChapter(src: string): string[] {
 	if (exercises.length === 0) issues.push('「你來做」裡沒有 Exercise');
 	for (const ex of exercises) issues.push(...checkExercise(ex));
 	if (!src.includes('/exit')) issues.push('章內沒提到 /exit');
+	return issues;
+}
+
+/** code fence 內 `cat > <path> <<'EOF'` 的目標路徑（貼給讀者的檔案清單）。 */
+export function heredocTargets(src: string): string[] {
+	const targets: string[] = [];
+	for (const block of codeBlocks(src)) {
+		for (const m of block.matchAll(/^\s*cat > (\S+) <<'EOF'\s*$/gm)) targets.push(m[1]);
+	}
+	return targets;
+}
+
+/** 期末作業頁的規則：四段標題、說明段字數、練習規則、五章工具都提到、不把 .claude/ 檔案貼給讀者。 */
+export function checkCapstone(src: string): string[] {
+	const issues: string[] = [];
+	if (!fencesClosed(src)) issues.push('code fence 沒有閉合');
+	const positions = headingPositions(src, CAPSTONE_SECTIONS);
+	CAPSTONE_SECTIONS.forEach((heading, i) => {
+		if (positions[i] < 0) issues.push(`缺標題或順序錯：${heading}`);
+	});
+	for (const heading of CAPSTONE_SECTIONS.slice(0, 3)) {
+		const n = proseChars(sectionBody(src, heading));
+		if (n < MIN_BODY_CHARS) issues.push(`${heading} 正文只有 ${n} 個非空白字元（需 ≥${MIN_BODY_CHARS}）`);
+	}
+	const exercises = exerciseBlocks(sectionBody(src, '## 你來做'));
+	if (exercises.length === 0) issues.push('「你來做」裡沒有 Exercise');
+	for (const ex of exercises) issues.push(...checkExercise(ex));
+	if (!src.includes('/exit')) issues.push('章內沒提到 /exit');
+	for (const word of CAPSTONE_MENTIONS) if (!src.includes(word)) issues.push(`沒提到 ${word}`);
+	for (const target of heredocTargets(src)) {
+		if (target.startsWith('.claude/')) issues.push(`把 ${target} 貼給了讀者（期末作業的工具檔要讀者自己寫）`);
+	}
 	return issues;
 }

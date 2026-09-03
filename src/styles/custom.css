@@ -105,6 +105,17 @@
 	transform: translateY(-3px);
 	border-color: var(--sl-color-accent);
 }
+.chapter-card.capstone {
+	border-style: dashed;
+	border-color: var(--sl-color-accent);
+	background:
+		radial-gradient(ellipse 80% 120% at 85% -20%, var(--sl-color-accent-low), transparent 70%),
+		var(--sl-color-bg-nav);
+}
+.chapter-card.capstone .chapter-num {
+	background: var(--sl-color-accent);
+	color: var(--sl-color-black);
+}
 .chapter-num {
 	display: inline-block;
 	font-family: var(--sl-font-mono);

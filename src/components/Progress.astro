@@ -1,11 +1,11 @@
 ---
 /**
- * 首頁「完成 x/N」。N 在 build 時由各章 mdx 原文經 checklist-ids parser 算出；
+ * 首頁「完成 x/N」。N 在 build 時由各章與期末作業的 mdx 原文經 checklist-ids parser 算出；
  * 瀏覽器端只計清單內的 id。根元素 data-total 供 e2e 讀。
  */
 import { collectChecklistIds } from '../lib/checklist-ids';
 
-const raw = import.meta.glob('/src/content/docs/0[1-5]-*.mdx', { query: '?raw', eager: true, import: 'default' });
+const raw = import.meta.glob('/src/content/docs/0[1-6]-*.mdx', { query: '?raw', eager: true, import: 'default' });
 const ids = collectChecklistIds(Object.values(raw) as string[]);
 const total = ids.length;
 ---

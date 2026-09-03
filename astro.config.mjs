@@ -19,6 +19,7 @@ export default defineConfig({
 				{ label: '第 3 章 workflow 定義', slug: '03-workflow' },
 				{ label: '第 4 章 hooks', slug: '04-hooks' },
 				{ label: '第 5 章 多 session 多工', slug: '05-multi-session' },
+				{ label: '期末作業 交付 v1.0.0', slug: '06-capstone' },
 			],
 		}),
 	],

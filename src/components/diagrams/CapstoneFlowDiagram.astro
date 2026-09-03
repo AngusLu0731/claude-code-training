@@ -1,0 +1,144 @@
+---
+/** 期末作業流程圖：主 checkout 寫工具鏈 → 兩個 worktree 平行 → merge → 對照、驗收、出版、閘門擋 push → CAPSTONE_OK。 */
+---
+
+<figure class="cc-diagram">
+	<svg viewBox="0 0 820 300" role="img" aria-label="期末作業流程：乾淨的 main 上寫四份工具檔並 commit；feat 與 docs 兩個 worktree 同時進行後 merge 回主 checkout；接著派 doc-checker、跑 ship-check 拿 go、/release 1.0.0 打 tag、git push 被 hook 擋下，最後 make capstone 印 CAPSTONE_OK">
+		<defs>
+			<marker id="cap-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+				<path d="M 0 0 L 10 5 L 0 10 z" class="arrow-head"></path>
+			</marker>
+		</defs>
+
+		<!-- 第一列：主 checkout → 工具鏈 → 兩個 worktree → merge -->
+		<rect class="node" x="8" y="56" width="88" height="48" rx="10"></rect>
+		<text class="node-text" x="52" y="76" text-anchor="middle">乾淨的</text>
+		<text class="node-text mono" x="52" y="94" text-anchor="middle">main</text>
+
+		<line class="arrow" x1="96" y1="80" x2="114" y2="80" marker-end="url(#cap-arrow)"></line>
+
+		<rect class="node strong" x="118" y="44" width="204" height="72" rx="10"></rect>
+		<text class="node-text bold" x="220" y="68" text-anchor="middle">自己寫四份工具檔</text>
+		<text class="node-sub" x="220" y="86" text-anchor="middle">hook · skill · agent · workflow</text>
+		<text class="tag" x="220" y="106" text-anchor="middle">第 1–4 章 · SPEC.md 一起 commit</text>
+
+		<path class="arrow" d="M 322 80 C 338 80, 338 36, 350 36" fill="none" marker-end="url(#cap-arrow)"></path>
+		<path class="arrow" d="M 322 80 C 338 80, 338 124, 350 124" fill="none" marker-end="url(#cap-arrow)"></path>
+
+		<rect class="node" x="356" y="14" width="190" height="44" rx="10"></rect>
+		<text class="node-text mono" x="451" y="32" text-anchor="middle">--worktree feat</text>
+		<text class="node-sub" x="451" y="49" text-anchor="middle">remove 指令 ＋ 測試</text>
+
+		<text class="tag" x="451" y="85" text-anchor="middle">第 5 章 · 同時進行</text>
+
+		<rect class="node" x="356" y="102" width="190" height="44" rx="10"></rect>
+		<text class="node-text mono" x="451" y="120" text-anchor="middle">--worktree docs</text>
+		<text class="node-sub" x="451" y="137" text-anchor="middle">README 的用法</text>
+
+		<path class="arrow" d="M 546 36 C 566 36, 566 80, 586 80" fill="none" marker-end="url(#cap-arrow)"></path>
+		<path class="arrow" d="M 546 124 C 566 124, 566 80, 586 80" fill="none" marker-end="url(#cap-arrow)"></path>
+
+		<rect class="node" x="592" y="56" width="132" height="48" rx="10"></rect>
+		<text class="node-text mono" x="658" y="76" text-anchor="middle">merge --no-ff</text>
+		<text class="node-sub" x="658" y="94" text-anchor="middle">回主 checkout ×2</text>
+
+		<!-- 折返到第二列 -->
+		<path class="rail" d="M 658 104 L 658 156 L 91 156 L 91 196" fill="none" marker-end="url(#cap-arrow)"></path>
+		<text class="tag" x="400" y="176" text-anchor="middle">之後全部在主 checkout 的 claude 裡做</text>
+
+		<!-- 第二列：對照 → 驗收 → 出版 → 閘門 → 驗收腳本 -->
+		<rect class="node" x="16" y="206" width="150" height="52" rx="10"></rect>
+		<text class="node-text mono" x="91" y="228" text-anchor="middle">@agent-doc-checker</text>
+		<text class="tag" x="91" y="248" text-anchor="middle">第 2 章 · 對照程式與文件</text>
+
+		<line class="arrow" x1="166" y1="232" x2="190" y2="232" marker-end="url(#cap-arrow)"></line>
+
+		<rect class="node" x="196" y="206" width="140" height="52" rx="10"></rect>
+		<text class="node-text mono" x="266" y="228" text-anchor="middle">/ship-check → go</text>
+		<text class="tag" x="266" y="248" text-anchor="middle">第 3 章 · 驗收產線</text>
+
+		<line class="arrow" x1="336" y1="232" x2="360" y2="232" marker-end="url(#cap-arrow)"></line>
+
+		<rect class="node" x="366" y="206" width="150" height="52" rx="10"></rect>
+		<text class="node-text mono" x="441" y="228" text-anchor="middle">/release 1.0.0</text>
+		<text class="tag" x="441" y="248" text-anchor="middle">第 1 章 · CHANGELOG ＋ tag</text>
+
+		<line class="arrow" x1="516" y1="232" x2="540" y2="232" marker-end="url(#cap-arrow)"></line>
+
+		<rect class="node blocked" x="546" y="206" width="120" height="52" rx="10"></rect>
+		<text class="node-text mono no" x="606" y="228" text-anchor="middle">git push ✗</text>
+		<text class="tag" x="606" y="248" text-anchor="middle">第 4 章 · hook 擋下</text>
+
+		<line class="arrow" x1="666" y1="232" x2="690" y2="232" marker-end="url(#cap-arrow)"></line>
+
+		<rect class="node done" x="696" y="206" width="110" height="52" rx="10"></rect>
+		<text class="node-text mono ok" x="751" y="228" text-anchor="middle">CAPSTONE_OK</text>
+		<text class="tag" x="751" y="248" text-anchor="middle">make capstone</text>
+
+		<text class="hint" x="410" y="286" text-anchor="middle">產出：v1.0.0 tag、CHANGELOG.md、多一個 remove 指令、git log --graph 上兩個 merge 節點</text>
+	</svg>
+	<figcaption>一次真正的交付：前五章的工具各就各位，最後由驗收腳本告訴你過了沒。</figcaption>
+</figure>
+
+<style>
+	.node {
+		fill: var(--sl-color-bg-nav);
+		stroke: var(--sl-color-gray-4);
+		stroke-width: 1.5;
+	}
+	.node.strong {
+		stroke: var(--sl-color-accent);
+		stroke-width: 2;
+	}
+	.node.blocked {
+		stroke: var(--sl-color-red);
+		stroke-dasharray: 6 4;
+	}
+	.node.done {
+		stroke: var(--sl-color-green);
+		stroke-width: 2;
+	}
+	.node-text {
+		fill: var(--sl-color-white);
+		font-size: 14px;
+	}
+	.node-text.bold {
+		font-weight: 700;
+	}
+	.node-text.mono {
+		font-family: var(--sl-font-mono, monospace);
+		font-size: 13px;
+	}
+	.node-text.no {
+		fill: var(--sl-color-red);
+		font-weight: 700;
+	}
+	.node-text.ok {
+		fill: var(--sl-color-green);
+		font-weight: 700;
+	}
+	.node-sub {
+		fill: var(--sl-color-gray-2);
+		font-size: 12.5px;
+	}
+	.tag {
+		fill: var(--sl-color-gray-3);
+		font-size: 11.5px;
+	}
+	.hint {
+		fill: var(--sl-color-gray-3);
+		font-size: 12.5px;
+	}
+	.arrow {
+		stroke: var(--sl-color-accent);
+		stroke-width: 2;
+	}
+	.rail {
+		stroke: var(--sl-color-accent);
+		stroke-width: 1.5;
+		stroke-dasharray: 5 4;
+	}
+	.arrow-head {
+		fill: var(--sl-color-accent);
+	}
+</style>
