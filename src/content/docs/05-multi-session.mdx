@@ -86,7 +86,7 @@ claude --worktree <name>
 ```
 
 Claude Code 會在 repo 根目錄下建 `.claude/worktrees/<name>/`（一份獨立的工作目錄），並開一條新分支 `worktree-<name>`，然後在那個目錄裡啟動 session。`-w` 是同一件事的縮寫。
-同名再開一次，會直接進既有的 worktree（自己先用 `git worktree add .claude/worktrees/<name> -b worktree-<name> <起點>` 開好的也算）。它預設從 **`origin/main`**（遠端的預設分支）長出來，所以每個 worktree 的起點都是乾淨的——反過來說，只在本機 commit、還沒 push 的東西不會出現在新 worktree 裡；期末作業會用到這一點。
+同名再開一次，會直接進既有的 worktree（自己先用 `git worktree add .claude/worktrees/<name> -b worktree-<name> <起點>` 開好的也算）。它預設從 **`origin/main`**（GitHub 上那份 `main` 在你電腦裡的複本）長出來，所以每個 worktree 的起點都是乾淨的——反過來說，只在本機 commit、還沒 push 的東西不會出現在新 worktree 裡。期末作業會碰到這件事，到時用 `settings.json` 的 `worktree.baseRef` 讓它改從本機 HEAD 長。
 
 </TabItem>
 <TabItem label="Orca">
@@ -110,11 +110,11 @@ Orca 是 worktree 原生的：按 repo 名旁的 **＋**、輸入任務名，就
 每個 session 收尾時請它用一句話摘要做了什麼、commit 了哪些檔。然後你回**主 checkout**（不是任何一個 worktree）做 merge：
 
 ```bash
-git merge --no-ff worktree-a
-git merge --no-ff worktree-b
+git merge --no-ff --no-edit worktree-a
+git merge --no-ff --no-edit worktree-b
 ```
 
-`--no-ff` 讓每個 session 的成果在 `git log --graph` 上各自成一個 merge 節點，事後看得出來哪批改動來自誰。
+`--no-ff` 讓每個 session 的成果在 `git log --graph` 上各自成一個 merge 節點，事後看得出來哪批改動來自誰（ff＝fast-forward：`main` 沒有新 commit 時，git 預設直接把指標挪到分支尾端、不留合併紀錄）。`--no-edit`＝用 git 自動產生的合併訊息——沒加的話 git 會開編輯器（多半是 vim）要你確認訊息，不熟 vim 的人會卡在那個畫面。
 
 ### worktree 的收與留
 
@@ -211,7 +211,7 @@ done
    <Tabs syncKey="tool">
    <TabItem label="CLI">
 
-   第一次在這個目錄開 `claude`，接受信任對話後 `/exit`。已經做過就跳過。
+   第一次在這個目錄開 `claude`，接受信任對話後 `/exit`。已經做過就跳過。`--worktree` 要求主 checkout 先接受過信任；接受這一次，進 worktree 不會再問。
 
    ```bash
    claude
@@ -225,7 +225,7 @@ done
    </TabItem>
    </Tabs>
 
-3. **session A**：開 worktree `a`。
+3. **session A**：開 worktree `a`。本章總共會用到三個終端機視窗（A、B 各跑一個 `claude`，C 做收斂），都 `cd` 到 repo 根目錄，可以先開好。
 
    <Tabs syncKey="tool">
    <TabItem label="CLI">
@@ -283,7 +283,7 @@ done
    開第三個終端機，在 repo 根目錄（不是 `.claude/worktrees/` 底下）：
 
    ```bash
-   git merge --no-ff worktree-a && git merge --no-ff worktree-b && python3 -m unittest -v
+   git merge --no-ff --no-edit worktree-a && git merge --no-ff --no-edit worktree-b && python3 -m unittest -v
    ```
 
    </TabItem>
@@ -292,7 +292,7 @@ done
    用步驟 1 開好的系統終端機，在主 checkout 執行——Orca 建的分支名預設就是任務名 `a`、`b`（不確定就先 `git branch` 看一眼）：
 
    ```bash
-   git merge --no-ff a && git merge --no-ff b && python3 -m unittest -v
+   git merge --no-ff --no-edit a && git merge --no-ff --no-edit b && python3 -m unittest -v
    ```
 
    <OrcaMergeDemo>
@@ -307,7 +307,7 @@ done
    <Tabs syncKey="tool">
    <TabItem label="CLI">
 
-   回終端機 A、B 各打 `/exit`。它會問 keep／remove，選 **remove**——成果已經 merge 進 `main`，刪掉是安全的。
+   回終端機 A、B 各打 `/exit`。它會問 keep／remove，選 **remove**——成果已經 merge 進 `main`，刪掉是安全的。沒出現提問的話，自己收：`git worktree remove .claude/worktrees/a && git branch -d worktree-a`（`b` 同理）。
 
    </TabItem>
    <TabItem label="Orca">
@@ -341,7 +341,7 @@ done
 ### 預期看到
 
 <TermDemo title="終端機 C — 收斂" lines={[
-	{ text: 'git merge --no-ff worktree-a && git merge --no-ff worktree-b && python3 -m unittest -v', kind: 'cmd' },
+	{ text: 'git merge --no-ff --no-edit worktree-a && git merge --no-ff --no-edit worktree-b && python3 -m unittest -v', kind: 'cmd' },
 	{ text: "Merge made by the 'ort' strategy.", kind: 'out' },
 	{ text: '……', kind: 'dim' },
 	{ text: 'Ran 32 tests in 3.412s', kind: 'out' },
@@ -358,11 +358,12 @@ done
 
 - 步驟 5 的 merge 沒有衝突；`python3 -m unittest -v` 最後幾行是 `Ran 32 tests`（或更多——`main` 本來有 31 個，A 每補一個測試就加一）與 `OK`。看到 `OK (skipped=2)` 也算過：那兩個是比對教材站原始碼的測試，單獨 clone 練習 repo 時會跳過（機器沒裝 node 的話會再多跳兩個，`skipped=4` 也正常）。
 - `git log --oneline --graph` 最上面有**兩個 merge 節點**（CLI 路線是 `Merge branch 'worktree-a'`、`Merge branch 'worktree-b'`；Orca 路線分支名預設是任務名，會是 `Merge branch 'a'`、`Merge branch 'b'`——結構相同，只有名字不同）。
-- `python3 src/todo.py list --json` 印出 JSON（空清單就是 `[]`）。
+- 先 `python3 src/todo.py add 測試` 再 `python3 src/todo.py list --json`，印出含 `text` 與 `done` 的 JSON 陣列（空清單印什麼依 A 的實作，不一定是 `[]`）。
 - 步驟 7 之後 `git worktree list` 只剩主 checkout 一行，`git branch` 沒有 `worktree-a`、`worktree-b`（Orca 路線：沒有 `a`、`b`）。
 
 ### 故障排除
 
+- **merge 時畫面突然變成一堆 `#`、打字沒反應**：git 開了 vim 要你確認合併訊息（指令少了 `--no-edit`）。打 `:wq` 再 Enter 就好。
 - **merge 衝突**：`git merge --abort`，回那個 session 說「只改指定檔案，重做一次」，它多半是動到了不該動的檔。
 - **remove 顯示 locked**：`git worktree unlock .claude/worktrees/<name>` 再 remove 一次。
 - **B 動了 src/**：提示詞邊界沒寫清楚，這是本章要你學到的事——把「不要動 src/ 與 tests/」寫進去再來一次。

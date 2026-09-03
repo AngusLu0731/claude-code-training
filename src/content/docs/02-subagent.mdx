@@ -66,7 +66,7 @@ tools: Read, Grep, Glob
 | --- | --- |
 | `name` | 必填，小寫與連字號；就是 `subagent_type` 與 `@agent-<name>` 用的名字 |
 | `description` | 必填，寫「什麼情況該派它」，Claude 據此自動選用 |
-| `tools` | 允許的工具清單；不寫就繼承全部。審查員只給 `Read, Grep, Glob` |
+| `tools` | 允許的工具清單；不寫就繼承全部。`Read`（讀檔）、`Grep`（在檔案內容裡搜字串）、`Glob`（照檔名樣式找檔案）三個都只會讀、不會寫，所以審查員只給這三個 |
 | `model` | 可選：`sonnet`、`opus`、`haiku` 或 `inherit`（預設） |
 
 ### 內建的 subagent，跟你的並列
@@ -83,7 +83,7 @@ Claude Code 本來就帶著幾個內建 subagent：**Explore**（唯讀的程式
 
 ### 看它在做什麼
 
-派出去之後，對話裡會多一列 subagent 的進度（名字、跑了多久、用了多少 token）。點進去（或在任務面板按下箭頭再 Enter）可以看它讀了哪些檔、回了什麼；主對話收到的是最後那段摘要。
+派出去之後，對話裡會多一列 subagent 的進度（名字、跑了多久、用了多少 token）。點進去（或在任務面板——畫面下方列出背景工作的那個區塊——按下箭頭再 Enter；也可以按 ctrl+o 展開逐字稿）可以看它讀了哪些檔、回了什麼；主對話收到的是最後那段摘要。
 
 ### 實務案例：把權限寫進定義檔
 
@@ -109,6 +109,8 @@ Claude Code 本來就帶著幾個內建 subagent：**Explore**（唯讀的程式
    ```
 
    <ResetNote />
+
+   練習 repo 也有 `make reset`，跟上面那段等價。
 
    </TabItem>
    <TabItem label="Orca">
@@ -201,7 +203,7 @@ Claude Code 本來就帶著幾個內建 subagent：**Explore**（唯讀的程式
 
 - 對話裡出現一列 **reviewer** 的 subagent 進度（不是主對話自己讀檔）；展開能看到它用 Read 讀了 `src/todo.py`。
 - 回報是幾行 `src/todo.py:<行號> — 建議` 形式的條目，最後一句總結。行號要對得上你打開檔案看到的位置。
-- `git status --porcelain` 只有 `?? .claude/agents/reviewer.md`——它只有讀取工具，改不了任何檔。
+- `git status --porcelain` 只有 `?? .claude/agents/reviewer.md`——它只有讀取工具，改不了任何檔（沒做步驟 1 的重置、直接從第 1 章接著做的話，會多出上一章留下的 `CHANGELOG.md`，那不是它改的）。
 
 ### 實跑範例（節錄）
 

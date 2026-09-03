@@ -16,7 +16,7 @@ import OrcaLauncherDemo from '../../components/diagrams/OrcaLauncherDemo.astro';
 
 <p class="one-liner">一句話：把每次都要重講的一套步驟寫成 SKILL.md，變成一個 /指令。</p>
 
-Skill 是一份 `SKILL.md`：上面是 YAML frontmatter（名字、什麼時候用、要不要參數），下面是 Markdown 步驟。放進 `.claude/skills/<name>/SKILL.md`，你就多了一個 `/name` 指令，Claude 也會在對話對得上 description 時自己拿出來用。
+Skill 是一份 `SKILL.md`：上面是 YAML frontmatter——檔案開頭兩行 `---` 之間、一行一個「欄位: 值」的區塊（名字、什麼時候用、要不要參數），下面是 Markdown 步驟。放進 `.claude/skills/<name>/SKILL.md`，你就多了一個 `/name` 指令，Claude 也會在對話對得上 description 時自己拿出來用。
 它解決的是「同一套步驟每次都要重新講」：產 changelog、寫 MR 說明、跑固定的檢查清單。把步驟寫成 skill，每次執行都是同一份標準，而且可以進 git 給整個團隊用。
 本章要你寫一個 `changelog` skill，從 git log 產生一段 Unreleased changelog 寫進 `CHANGELOG.md`，用 `/changelog` 叫起來。
 
@@ -117,7 +117,7 @@ skill 是一個**資料夾**，不是一份檔。SKILL.md 保持精簡（官方�
    <Tabs syncKey="tool">
    <TabItem label="CLI">
 
-   第一次做就 clone（首頁「共用步驟」做過就跳過 clone）；要重做這一章，用第二段把 repo 重置回乾淨的 `main`。
+   第一次做就 clone（首頁「共用步驟」做過就跳過 clone）；要重做這一章，用第二段把 repo 重置回乾淨的 `main`。**已經在 repo 目錄裡的人不要再貼 clone 這段**，會多出一層巢狀目錄。
 
    ```bash
    git clone https://github.com/AngusLu0731/claude-code-practice.git
@@ -133,6 +133,8 @@ skill 是一個**資料夾**，不是一份檔。SKILL.md 保持精簡（官方�
    ```
 
    <ResetNote />
+
+   練習 repo 也有 `make reset`，跟上面那段等價。
 
    </TabItem>
    <TabItem label="Orca">
@@ -193,6 +195,8 @@ skill 是一個**資料夾**，不是一份檔。SKILL.md 保持精簡（官方�
    EOF
    ````
 
+   第一次看到 `cat > … <<'EOF'`？它到最後一行 `EOF` 是一組：把中間的內容一字不改寫進那個檔案。**整段一起複製**、貼到終端機、按 Enter——過程中不會有任何輸出，提示符回來、沒有錯誤就是寫好了（`cat .claude/skills/changelog/SKILL.md` 可以確認）。不習慣的話，用你的編輯器建檔、貼中間那段內容也一樣。另外，練習 repo 已預先建好 `.claude/` 底下的 `agents`、`hooks`、`skills`、`workflows` 四個資料夾；skill 還要多一層自己的目錄，所以這裡有 `mkdir -p`——在自己的專案要先把這些目錄建起來。
+
 4. 建完 `.claude/` 檔案，保險起見重開一次（skills 其實有即時偵測、通常不重開也找得到；hooks 與 workflow 才一定要重開）：
 
    <Tabs syncKey="tool">
@@ -231,9 +235,9 @@ skill 是一個**資料夾**，不是一份檔。SKILL.md 保持精簡（官方�
 橘色那行「（changelog skill v1）」＝SKILL.md 正文被展開的證據；日期與條目依你的 git log 而定。
 </TermDemo>
 
-- 送出 `/changelog` 後，對話裡展開的內容第一句是 **「（changelog skill v1）」**——那是 SKILL.md 正文被載入的證據（版面上沒看到的話，按 **ctrl+o** 展開對話逐字稿找）。
+- 送出 `/changelog` 後，對話裡展開的內容第一句是 **「（changelog skill v1）」**——那是 SKILL.md 正文被載入的證據（版面上沒看到的話，按 **ctrl+o** 展開對話逐字稿找；再按一次 ctrl+o 回到對話）。
 - Claude 跑 `git log --oneline`，依 type 分組，寫入 `CHANGELOG.md`，並把那段印給你看。
-- `git status --porcelain` 出現 `?? CHANGELOG.md`；打開檔案第一行是 `## Unreleased (今天日期)`，底下是 `### feat`、`### docs` 之類的分組條目。
+- `git status --porcelain` 出現 `?? CHANGELOG.md`（`??`＝新檔、還沒被 git 追蹤）；打開檔案第一行是 `## Unreleased (今天日期)`，底下是 `### feat`、`### docs` 之類的分組條目。
 
 ### 實跑範例
 

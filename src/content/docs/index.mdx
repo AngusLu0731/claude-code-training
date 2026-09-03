@@ -39,6 +39,18 @@ import { CLAUDE_CODE_VERSION, VERIFIED_ON } from '../../data/version';
 - `python3 --version` 顯示 **3.9 或更新**（練習 repo 只用標準函式庫，不用裝套件）。
 - 有 `git`。
 
+### 會用到、你可能沒見過的名詞
+
+五章會反覆用到下面這些字，第一次看到卡住就回來查這張表：
+
+- **`origin/main`**：GitHub 上那份 `main` 在你電腦裡的複本（clone 時抓下來的）。各章重置指令的 `git reset --hard origin/main`＝把 repo 弄成跟 GitHub 一模一樣。
+- **fast-forward／`--no-ff`**：git 合併分支時，如果 `main` 沒有新 commit，預設會直接把 `main` 的指標挪到分支尾端（fast-forward），不留任何合併紀錄；`--no-ff` 強制留一個合併 commit，之後才看得出哪批改動是誰做的。
+- **tag**：給某個 commit 貼一個名字，例如 `v1.0.0`。
+- **heredoc（`cat > 檔名 <<'EOF' … EOF`）**：把兩個 `EOF` 之間的內容一字不改寫進那個檔案。整段一起複製、貼到終端機、按 Enter；提示符回來、沒有錯誤就是寫好了。
+- **stdin／stderr／exit code**：餵給程式的輸入／程式印錯誤訊息用的管道／程式結束時回報的數字（`0`＝正常）。第 4 章的 hook 就靠這三樣跟 Claude Code 溝通。
+- **環境變數**：shell 傳給程式的鍵值，例如 `TODO_FILE=/tmp/x.json python3 src/todo.py list`。
+- **`git status --porcelain`**：精簡格式的 `git status`：`??`＝新檔、還沒被 git 追蹤；` M`＝已追蹤的檔被改了。各章「預期看到」拿它當證據。
+
 ### 選一條路：CLI 或 Orca
 
 全站的操作步驟提供兩條等價的路，帶分頁的區塊點一下就能切換；選擇會記住並同步到全站的所有分頁：
@@ -62,7 +74,7 @@ import { CLAUDE_CODE_VERSION, VERIFIED_ON } from '../../data/version';
 brew install --cask stablyai/orca/orca
 ```
 
-第一次啟動會要求家目錄的存取權（用來加 repo），並提議匯入既有的 `~/.claude` 設定——同意即可，Claude Code 的登入直接沿用。之後的固定模式：側欄 **Add Repo** 加入本機 checkout → 按 repo 名旁的 **＋** 開一個 worktree（輸入任務名，起點用預設的 main）→ agent 下拉選 **Claude Code**，Orca 會自動啟動它。進到 worktree 之後，提示詞、檔案內容、`/指令` 都跟 CLI 相同；要下 shell 指令（貼檔案）就按 **Cmd-T** 在同一個 worktree 開新終端機分頁，agent 結束後按分頁上的 **Restart** 重開。
+第一次啟動會要求家目錄的存取權（用來加 repo），並提議匯入既有的 `~/.claude` 設定——同意即可，Claude Code 的登入直接沿用。之後的固定模式：側欄 **Add Repo** 加入本機 checkout → 按 repo 名旁的 **＋** 開一個 worktree（輸入任務名，起點用預設的 `main`——本機的分支）→ agent 下拉選 **Claude Code**，Orca 會自動啟動它。進到 worktree 之後，提示詞、檔案內容、`/指令` 都跟 CLI 相同；要下 shell 指令（貼檔案）就按 **Cmd-T** 在同一個 worktree 開新終端機分頁，agent 結束後按分頁上的 **Restart** 重開。
 
 <OrcaLauncherDemo>
 每章 Orca 路線的固定開場：① 按 repo 旁的 ＋ → ② 取任務名、起點用預設的 main → ③ agent 選 Claude Code。UI 文字以你裝到的版本為準。
@@ -73,18 +85,22 @@ brew install --cask stablyai/orca/orca
 
 各章「起點」的重置也依路線不同：CLI 用 reset 指令把 repo 洗回乾淨的 `main`；Orca 直接**開一個新 worktree**——它本來就從乾淨的 main 長出來，重做一章＝刪掉舊 worktree、再開一個新的。
 
-### 三件先講清楚的事
+### 四件先講清楚的事
 
 <Aside type="caution" title="請在終端機執行 claude">
 本站所有步驟都在終端機執行 `claude`——直接開系統終端機（CLI 路線），或用 Orca 內建的終端機（Orca 路線）都可以，兩者畫面一致。VS Code 或 Desktop 使用者請開一個終端機照做；IDE 面板的按鈕與提示文字不同，容易對不上。
 </Aside>
 
 <Aside type="note" title="權限模式不同，提示就不同">
-auto／manual 權限模式看到的提示不一樣（有人會被問「要不要允許」，有人不會）。站上「預期看到」一律以**結果**為準：`/workflows` 有沒有進度、`git status` 有沒有那個檔、diff 是不是那一行。提示長得不一樣不代表做錯。
+auto／manual 權限模式看到的提示不一樣（有人會被問「要不要允許」，有人不會）。站上「預期看到」一律以**結果**為準：`/workflows` 有沒有進度、`git status` 有沒有那個檔、diff 是不是那一行。提示長得不一樣不代表做錯。在 `claude` 裡打 `/permissions` 可以看你目前的模式；本教材不要求切換，出現「要不要允許」就選允許。
 </Aside>
 
 <Aside type="tip" title="進度只存在你的瀏覽器">
 自檢勾選存在這台電腦的瀏覽器（localStorage），不會上傳、換電腦不會同步。Safari 超過 7 天沒開本站會把它清掉，建議用 Chrome，或一週內做完。
+</Aside>
+
+<Aside type="caution" title="常常需要兩個終端機">
+從第 4 章起，很多步驟要你在 `claude` 開著的同時「在終端機」下 git 指令或貼檔案。請習慣開兩個視窗、都 `cd` 到 repo：一個跑 `claude`、一個跑 shell。或者在 `claude` 的提示符最前面打 `!`（例如 `!git status`），Claude Code 會直接執行那行 shell 指令、不交給 Claude——之後各章寫「`!ls …`」就是這個意思。
 </Aside>
 
 ### 共用步驟（每一章都從這裡開始）
@@ -160,7 +176,7 @@ auto／manual 權限模式看到的提示不一樣（有人會被問「要不要
 	</a>
 </div>
 
-前三章是一條遞進鏈——**說明書（skill）→ 執行者（subagent）→ 產線（workflow）**；第 4 章把規則變成閘門，第 5 章把多個 session 平行起來。每章大約 20 到 40 分鐘，建議照章走；不過每章開頭都會把 repo 重置回乾淨狀態，跳著做也可以。期末作業約 60 到 90 分鐘，五章都做過再來——它把五個工具串成一條真正的交付流程，而且工具檔要你自己寫。
+前三章是一條遞進鏈——**說明書（skill）→ 執行者（subagent）→ 產線（workflow）**；第 4 章把規則變成閘門，第 5 章把多個 session 平行起來。每章大約 20 到 40 分鐘，建議照章走；不過每章開頭都會把 repo 重置回乾淨狀態，跳著做也可以（第 5 章與期末的重置多幾行，見各章）。期末作業約 60 到 90 分鐘，五章都做過再來——它把五個工具串成一條真正的交付流程，而且工具檔要你自己寫。
 
 ### 我的問題該用哪個工具？
 

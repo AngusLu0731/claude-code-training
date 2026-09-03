@@ -77,6 +77,8 @@ Hook 是 Claude Code 在特定時機**一定會執行**的程式：工具呼叫�
 
 ### 腳本收到什麼、怎麼回
 
+先講三個字：**stdin**＝別人餵給程式的輸入（這裡是 Claude Code 餵的 JSON）；**stderr**＝程式印訊息用、不算正式輸出的管道；**exit code**＝程式結束時回報的一個數字，`exit 0` 是「正常」。hook 就靠這三樣跟 Claude Code 溝通。
+
 Claude Code 把一份 JSON 從 **stdin** 送給你的腳本，PreToolUse 至少有這些欄位：
 
 ```json
@@ -94,7 +96,7 @@ Claude Code 把一份 JSON 從 **stdin** 送給你的腳本，PreToolUse 至少�
 回應靠 **exit code**：
 
 - `exit 0`：放行。stderr 只進 debug log，Claude 看不到。
-- `exit 2`：**擋下**，stderr 的文字會送給 Claude 當理由。這是唯一靠 exit code 就能擋的數字——`exit 1` 只是「非阻斷錯誤」，動作照做。
+- `exit 2`：**擋下**，stderr 的文字會送給 Claude 當理由。這是唯一靠 exit code 就能擋的數字——`exit 1` 代表「腳本自己壞了」：Claude Code 只記一筆錯誤、工具照樣執行，所以寫錯成 1 會看起來像 hook 沒生效。
 
 ### `/hooks` 檢視
 
@@ -116,7 +118,7 @@ Claude Code 把一份 JSON 從 **stdin** 送給你的腳本，PreToolUse 至少�
 ### 實務案例：spec-gate
 
 一個團隊的規則是「產品碼沒有已確認的規格文件不准改」。他們把它做成 PreToolUse hook：讀 `tool_input.file_path`，算出相對於專案根目錄的路徑，如果落在受保護的目錄而規格檔不存在，就印理由到 stderr 並 `exit 2`。
-本章的版本把規則簡化成一句：**`src/` 底下沒有 `SPEC.md` 就不准改**。腳本另一個值得學的地方：每條「放行」路徑都在 stderr 留一行 `[spec-gate] skip: <原因>`，不靜默吞例外——閘門壞了你才看得出來。
+本章的版本把規則簡化成一句：**`src/` 底下沒有 `SPEC.md` 就不准改**。腳本的 `gate()` 分三段（拿到要改的檔、算相對路徑、規則判斷），期末作業改寫成別的規則時，只有第 3 段要換。腳本另一個值得學的地方：每條「放行」路徑都在 stderr 留一行 `[spec-gate] skip: <原因>`，不靜默吞例外——閘門壞了你才看得出來。
 
 ### 進階選做：hook 為什麼擋不住 shell 改檔
 
@@ -142,6 +144,8 @@ Claude Code 把一份 JSON 從 **stdin** 送給你的腳本，PreToolUse 至少�
    ```
 
    <ResetNote />
+
+   練習 repo 也有 `make reset`，跟上面那段等價。
 
    </TabItem>
    <TabItem label="Orca">
@@ -214,9 +218,11 @@ Claude Code 把一份 JSON 從 **stdin** 送給你的腳本，PreToolUse 至少�
 
 
    def gate(payload: dict) -> int:
+       # 1. 拿到要改的檔
        file_path = (payload.get("tool_input") or {}).get("file_path")
        if not file_path:
            return skip("tool_input 沒有 file_path")
+       # 2. 算出它相對於專案根目錄的路徑
        start = os.environ.get("CLAUDE_PROJECT_DIR") or payload.get("cwd")
        if not start:
            return skip("沒有 CLAUDE_PROJECT_DIR 也沒有 cwd")
@@ -227,6 +233,7 @@ Claude Code 把一份 JSON 從 **stdin** 送給你的腳本，PreToolUse 至少�
            rel = Path(file_path).resolve().relative_to(root).as_posix()
        except ValueError:
            return skip("檔案不在專案底下：" + str(file_path))
+       # 3. 規則判斷：在 src/ 底下、又沒有 SPEC.md，就擋
        if not rel.startswith("src/"):
            return skip("不在 src/ 底下：" + rel)
        if (root / "SPEC.md").exists():
@@ -274,7 +281,7 @@ Claude Code 把一份 JSON 從 **stdin** 送給你的腳本，PreToolUse 至少�
    只用 Edit 工具在 src/todo.py 最上面加一行註解，不要用 shell 指令改檔；若被 hook 擋下就停下來回報我，不要建任何檔案
    ```
 
-6. 看到它回報被擋之後，**你自己**（在終端機，不是請 Claude）建規格檔，再下一次同樣的提示詞：
+6. 看到它回報被擋之後，**你自己**建規格檔——不要請 Claude 建。另開一個終端機視窗 `cd` 到 repo 執行下面這行（`claude` 那個視窗留著不要關），或直接在 `claude` 的提示符打 `!echo "改 todo.py 加註解" > SPEC.md`（開頭的 `!` 表示這行是 shell 指令、由你執行，不是交給 Claude）。然後回 `claude` 再下一次同樣的提示詞：
 
    ```bash
    echo "改 todo.py 加註解" > SPEC.md
@@ -295,7 +302,7 @@ Claude Code 把一份 JSON 從 **stdin** 送給你的腳本，PreToolUse 至少�
 </TermDemo>
 
 - 步驟 5：Claude 回報 Edit 被 hook 擋下，並引用理由 **「已擋下：src/ 受 SPEC 保護」**；它沒有改任何檔、沒有建 SPEC.md。此時 `git status --porcelain` 只有兩行：`?? .claude/settings.json` 與 `?? .claude/hooks/spec_gate.py`。
-- 步驟 6：同樣的提示詞這次成功。`git diff src/todo.py` 是一行新增（檔案最上面多一行註解）；`git status --porcelain` 多了 `?? SPEC.md` 與 ` M src/todo.py`。
+- 步驟 6：同樣的提示詞這次成功。`git diff src/todo.py` 是一行新增（檔案最上面多一行註解；放在第 1 行 `#!/usr/bin/env python3` 底下也算，Claude 通常不會動那一行）；`git status --porcelain` 多了 `?? SPEC.md` 與 ` M src/todo.py`。
 
 ### 故障排除
 

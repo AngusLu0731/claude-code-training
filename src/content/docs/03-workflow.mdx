@@ -29,7 +29,7 @@ import { CLAUDE_CODE_VERSION } from '../../data/version';
 
 拿本章要寫的 review-flow 實跑一次當例子，資料是這樣流的：
 
-1. **Review 站**：兩個 agent 同時出發，各自讀一個檔。它們不是「聊天」，而是被要求回**固定形狀**的 JSON——`findings` 陣列，每筆一定有 `file`、`line`、`note`（這個形狀就是 `schema`，回來時已經驗證過，不用自己 parse）。
+1. **Review 站**：兩個 agent 同時出發，各自讀一個檔。它們不是「聊天」，而是被要求回**固定形狀**的 JSON——`findings` 陣列，每筆一定有 `file`、`line`、`note`（這個形狀就是 `schema`——你先寫好的「回覆必須長什麼樣」的規格；Claude Code 收到 agent 的回覆會先照它檢查、不合就重試，所以到你手上一定是這個形狀，不用自己解析）。
 2. **腳本接手**：`filter(Boolean)` 先把失敗的 agent（回 `null`）濾掉，再把兩份 findings 合併——那次實跑是 5＋5 共 10 筆。
 3. **Synthesize 站**：10 筆 JSON 被塞進第三個 agent 的 prompt，它產出一段 150 字摘要；`return summary` 就把摘要送回你的對話。
 
@@ -87,7 +87,7 @@ import { CLAUDE_CODE_VERSION } from '../../data/version';
 | `export const meta = { name, description, phases }` | `meta` 必填，裡面 `name`、`description` 必填；`name` 就是之後的 `/name`。`phases` 選填，對應**啟動核准提示**列出的站名（title 要跟 `phase()` 打的完全一致）；進度畫面的分組是腳本裡的 `phase()` 呼叫決定的 |
 | `phase('Review')` | 之後的 `agent()` 都歸在這一組顯示 |
 | `agent(prompt, { label, phase, schema })` | 開一個 subagent。**prompt 要自足**（它看不到主對話）；給 `schema` 就回驗證過的物件，不用自己 parse |
-| `parallel([() => agent(...), () => agent(...)])` | 同時跑、全部回來才繼續；任一個失敗會變 `null`，記得 `.filter(Boolean)` |
+| `parallel([() => agent(...), () => agent(...)])` | 同時跑、全部回來才繼續。每一項是 `() => agent(...)`——把「呼叫 agent」包成一個**還沒執行**的小函式（術語叫 thunk），由 `parallel` 決定何時同時執行；寫成 `[agent(...), agent(...)]` 會錯。任一個失敗會變 `null`，記得 `.filter(Boolean)` |
 | `pipeline(items, stage1, stage2)` | 每個 item 各自走完所有 stage，不互等；多數多階段工作用這個 |
 | `log('...')` | 在進度畫面印一行給人看 |
 | `return value` | 腳本的回傳值就是 workflow 的結果，會回到你的對話 |
@@ -95,6 +95,19 @@ import { CLAUDE_CODE_VERSION } from '../../data/version';
 <Aside type="note">
 以 Claude Code {CLAUDE_CODE_VERSION} 實跑驗證；完整定義見 Agent SDK 的 Workflow tool。腳本是純 JavaScript（不能寫 TypeScript 型別），頂層可以直接 `await`。
 </Aside>
+
+### 沒寫過 JavaScript？先看懂這六個寫法
+
+下面練習要貼的 `review-flow.js` 只用到這六種寫法，看懂就能讀、也能改（期末作業要你自己寫一支）：
+
+| 寫法 | 意思 |
+| --- | --- |
+| `const X = …` | 宣告一個名字。`export const meta`：這個名字要給 Claude Code 讀，所以多了 `export` |
+| `(file) => …`（後面接反引號字串） | 一個小函式：把 `file` 塞進字串。反引號包起來的字串裡，`${file}` 會被換成值 |
+| `() => agent(...)` | 把「呼叫 agent」包成一個**還沒執行**的小函式（thunk）；`parallel` 要的是這種函式的陣列 |
+| `await` | 等結果回來再往下。`const [todo, tests] = await parallel([...])`：兩個結果各自接住 |
+| `.filter(Boolean).flatMap((r) => r.findings)` | 先把 `null` 丟掉，再把每份的 `findings` 攤平成一個陣列 |
+| schema 物件 | 先寫好「回覆必須長什麼樣」：`type` 是 object／array／string／integer，`required` 列必填欄位，`properties` 描述每個欄位，`items` 描述陣列裡每一筆；要限制只能是幾個值之一，用 `enum: ['go', 'no-go']`（期末會用到） |
 
 ### 兩種叫法，別搞混
 
@@ -125,6 +138,8 @@ import { CLAUDE_CODE_VERSION } from '../../data/version';
    ```
 
    <ResetNote />
+
+   練習 repo 也有 `make reset`，跟上面那段等價。
 
    </TabItem>
    <TabItem label="Orca">
@@ -238,7 +253,7 @@ import { CLAUDE_CODE_VERSION } from '../../data/version';
 ### 故障排除
 
 - **輸入 `/` 沒有 `/review-flow`**：先 `ls .claude/workflows/` 確認檔案在、檔名對；再確認你有 `/exit` 重開 `claude`（workflow 在 session 啟動時載入）。都對還是沒有，回「前置檢查」第 4 步的分流。
-- **核准提示長得不一樣或沒出現**：manual／accept edits 模式每次都會問；auto 模式只問第一次。無頭 `-p` 模式不會問、預設拒絕自訂 workflow，要加 `--allowedTools Workflow`（互動模式不需要）。
+- **核准提示長得不一樣或沒出現**：manual／accept edits 模式每次都會問；auto 模式只問第一次。無頭 `-p` 模式（不開互動介面、跑完就退出的 `claude -p`，第 5 章會看到）不會問、預設拒絕自訂 workflow，要加 `--allowedTools Workflow`（互動模式不需要）。
 - **跑到一半停住**：`/workflows` 進去看是哪個 agent 在等權限（不在 allowlist 的 shell 指令會問你）；本章的 agent 只用 Read，不該發生，發生了多半是 prompt 被改過。
 
 ### 附錄：閱讀模式用的實跑輸出
