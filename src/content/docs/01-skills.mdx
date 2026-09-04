@@ -152,6 +152,8 @@ skill 是一個**資料夾**，不是一份檔。SKILL.md 保持精簡（官方�
 
 3. **在終端機（不是 Claude 裡）**貼這個檔案到 `.claude/skills/changelog/SKILL.md`（與練習 repo 的 `solutions/ch1-skills/.claude/skills/changelog/SKILL.md` 相同；Orca：按 **Cmd-T** 在這個 worktree 開一個新終端機分頁來貼）：
 
+   下面這段是 heredoc：`cat > 路徑 <<'EOF'` 到最後一行 `EOF` 是一組，把中間的內容一字不改寫進那個檔案。**整段一起複製**、貼到終端機、按 Enter——過程中不會有任何輸出，提示符回來、沒有錯誤就是寫好了（之後 `cat .claude/skills/changelog/SKILL.md` 可以確認）。不習慣的話，用你的編輯器建檔、貼中間那段內容也一樣。練習 repo 已預先建好 `.claude/` 底下的 `agents`、`hooks`、`skills`、`workflows` 四個資料夾；skill 還要多一層自己的目錄，所以第一行有 `mkdir -p`——在自己的專案要先把這些目錄建起來。
+
    ````bash
    mkdir -p .claude/skills/changelog
    cat > .claude/skills/changelog/SKILL.md <<'EOF'
@@ -195,7 +197,7 @@ skill 是一個**資料夾**，不是一份檔。SKILL.md 保持精簡（官方�
    EOF
    ````
 
-   第一次看到 `cat > … <<'EOF'`？它到最後一行 `EOF` 是一組：把中間的內容一字不改寫進那個檔案。**整段一起複製**、貼到終端機、按 Enter——過程中不會有任何輸出，提示符回來、沒有錯誤就是寫好了（`cat .claude/skills/changelog/SKILL.md` 可以確認）。不習慣的話，用你的編輯器建檔、貼中間那段內容也一樣。另外，練習 repo 已預先建好 `.claude/` 底下的 `agents`、`hooks`、`skills`、`workflows` 四個資料夾；skill 還要多一層自己的目錄，所以這裡有 `mkdir -p`——在自己的專案要先把這些目錄建起來。
+   這份 skill 刻意沒寫 `allowed-tools`：Claude 跑 `git log` 前可能會照你目前的權限模式問一次，選允許即可；上面表格的 `allowed-tools: Bash(git log *)` 是你以後想省掉這個提示時才加。
 
 4. 建完 `.claude/` 檔案，保險起見重開一次（skills 其實有即時偵測、通常不重開也找得到；hooks 與 workflow 才一定要重開）：
 
@@ -241,7 +243,7 @@ skill 是一個**資料夾**，不是一份檔。SKILL.md 保持精簡（官方�
 
 ### 實跑範例
 
-在乾淨的 `main` 上跑一次 `/changelog`，產出的 `CHANGELOG.md` 長這樣（日期是你跑的那天；條目數、短 hash 與分組依你 clone 到的 `main` 的 `git log` 而定，這裡不承諾固定值）：
+在乾淨的 `main` 上跑一次 `/changelog`，產出的 `CHANGELOG.md` 長這樣（日期是你跑的那天；條目數與短 hash 依你 clone 到的 `main` 的 `git log` 而定，這裡不承諾固定值）：
 
 ```markdown
 ## Unreleased (YYYY-MM-DD)
@@ -249,11 +251,17 @@ skill 是一個**資料夾**，不是一份檔。SKILL.md 保持精簡（官方�
 ### feat
 - <feat 類型 commit 的 subject>（<短 hash>）
 
+### docs
+- <docs 類型 commit 的 subject>（<短 hash>）
+
+### refactor
+- <refactor 類型 commit 的 subject>（<短 hash>）
+
 ### chore
 - <chore 類型 commit 的 subject>（<短 hash>）
 ```
 
-只會列出有 commit 的分組。
+只會列出有 commit 的分組——練習 repo 的 `main` 目前有 feat、docs、refactor、chore 四種 type，所以你會看到四組；之後 repo 多了別種 commit，組數也會跟著變。
 
 <Checklist items={[
   { id: 'ch1-ex1-1', text: '.claude/skills/changelog/SKILL.md 貼好、重開後 / 清單看得到 changelog' },

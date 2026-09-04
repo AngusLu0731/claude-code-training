@@ -53,7 +53,7 @@ import { CLAUDE_CODE_VERSION } from '../../data/version';
 <Steps>
 
 1. `claude --version` 是 {CLAUDE_CODE_VERSION} 或更新。
-2. 若你用的是 **Pro 方案**，在 `claude` 裡打 `/config`，找到 **Dynamic workflows** 那一列，確認是開的（其他付費方案預設就是開的）。
+2. 若你用的是 **Pro 方案**，在 `claude` 裡打 `/config`，找到 **Dynamic workflows** 那一列，確認是開的（其他付費方案預設就是開的）。不確定自己是哪種方案就跳過這步，直接用步驟 4 的判準。
 3. 參考訊號：在提示符輸入 `/`，清單裡通常會有內建的 `/deep-research`。但它**另外**依賴 WebSearch 工具——你的環境若不能用 WebSearch，它會消失，不代表 workflow 被關掉；看不到它先別下結論。
 4. 最後判準是**你自己的 workflow 載不載得到**。做完下面練習的步驟 3、4 之後，輸入 `/` 看清單有沒有 `/review-flow`：
    - **有** → 環境支援，照練習做下去。
@@ -82,13 +82,15 @@ import { CLAUDE_CODE_VERSION } from '../../data/version';
 
 ### 腳本長什麼樣
 
+先講一件寫過 Python 的人一定會問的事：下面的 `agent`、`parallel`、`pipeline`、`phase`、`log` **不用 import**——Claude Code 執行這支腳本時會把它們準備好、當全域函式塞進來，你只管呼叫。
+
 | 元素 | 作用 |
 | --- | --- |
 | `export const meta = { name, description, phases }` | `meta` 必填，裡面 `name`、`description` 必填；`name` 就是之後的 `/name`。`phases` 選填，對應**啟動核准提示**列出的站名（title 要跟 `phase()` 打的完全一致）；進度畫面的分組是腳本裡的 `phase()` 呼叫決定的 |
 | `phase('Review')` | 之後的 `agent()` 都歸在這一組顯示 |
 | `agent(prompt, { label, phase, schema })` | 開一個 subagent。**prompt 要自足**（它看不到主對話）；給 `schema` 就回驗證過的物件，不用自己 parse |
 | `parallel([() => agent(...), () => agent(...)])` | 同時跑、全部回來才繼續。每一項是 `() => agent(...)`——把「呼叫 agent」包成一個**還沒執行**的小函式（術語叫 thunk），由 `parallel` 決定何時同時執行；寫成 `[agent(...), agent(...)]` 會錯。任一個失敗會變 `null`，記得 `.filter(Boolean)` |
-| `pipeline(items, stage1, stage2)` | 每個 item 各自走完所有 stage，不互等；多數多階段工作用這個 |
+| `pipeline(items, stage1, stage2)` | 每個 item 各自走完所有 stage，不互等；「每個檔案各自跑完整條流程」用這個。本教材的兩支 workflow 都只用 `parallel`，這列先知道有就好 |
 | `log('...')` | 在進度畫面印一行給人看 |
 | `return value` | 腳本的回傳值就是 workflow 的結果，會回到你的對話 |
 

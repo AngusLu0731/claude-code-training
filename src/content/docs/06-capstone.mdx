@@ -107,7 +107,7 @@ EOF
 
 - `.claude/hooks/push_gate.py`：讀 stdin JSON 的 `tool_input.command`。**同一段指令裡同時出現 `git` 與 `push`**（`git push origin main`、`git push --tags`、`cd x && git push` 都算）→ 往 stderr 印一句含「已擋下」的理由，`exit 2`。其他情況 `exit 0`，並在 stderr 留一行 `[push-gate] skip: 原因`；stdin 不是 JSON、沒有 `command` 欄位也是 `exit 0`。
 
-起手式：把第 4 章的 `spec_gate.py` 複製成 `push_gate.py`。`gate()` 的第 1、2 段（拿 `file_path`、算相對路徑）都不需要了，改成從 `tool_input` 拿 `command`，只留第 3 段的規則判斷。規則本身不用正則，`"git" in command and "push" in command` 這種最簡單的寫法就能過驗收（代價是 `git commit -m "push fix"` 也會被擋——規格說了寧可誤擋）。
+起手式：第 4 章貼的 `spec_gate.py` 已經被步驟 1 的重置洗掉了，但練習 repo 的 `solutions/` 留著一份——`cp solutions/ch4-hooks/.claude/hooks/spec_gate.py .claude/hooks/push_gate.py`。`gate()` 的第 1、2 段（拿 `file_path`、算相對路徑）都不需要了，改成從 `tool_input` 拿 `command`，只留第 3 段的規則判斷。規則本身不用正則，`"git" in command and "push" in command` 這種最簡單的寫法就能過驗收（代價是 `git commit -m "push fix"` 也會被擋——規格說了寧可誤擋）。
 
 兩個常見的坑：只找字串 `push` 會誤擋 `echo push`；只擋開頭是 `git push` 會漏掉 `cd x && git push`。寧可誤擋，不要漏擋——但驗收會兩邊都試。
 
@@ -131,7 +131,7 @@ echo '{"tool_name":"Bash","tool_input":{"command":"echo push"}}' | python3 .clau
 | `argument-hint` | `<version>` | 打 `/release` 時提示要帶版本號 |
 | `disable-model-invocation` | `true` | 它會 commit、打 tag——有副作用的步驟不讓 Claude 自己決定要不要跑（第 1 章那張表） |
 
-正文步驟（順序就是安全網）：版本號從 `$ARGUMENTS` 拿，沒給就停下來問；先確認在 `main` 且工作樹乾淨（`git status --porcelain` 沒有輸出——版本要建立在全部 commit 的狀態上），不是就停下來回報；再跑 `python3 -m unittest -v`，最後不是 `OK` 就停；用 `git describe --tags --abbrev=0` 找上一個 tag，有就只看 `<tag>..HEAD` 的 `git log --oneline`、沒有就看全部，依 type 分組（第 1 章 changelog 的格式）；把 `## <version> (YYYY-MM-DD)` 那段插到 `CHANGELOG.md` 最上面（沒有就建、有就插在第一行前）；`git add CHANGELOG.md && git commit -m "chore: release <version>"`；`git tag v<version>`；最後印結果並提醒**沒有 push**。限制：只動 `CHANGELOG.md`；絕不 push。
+正文步驟（順序就是安全網）：版本號從 `$ARGUMENTS` 拿，沒給就停下來問；先確認在 `main` 且工作樹乾淨（`git status --porcelain` 沒有輸出——版本要建立在全部 commit 的狀態上），不是就停下來回報；再跑 `python3 -m unittest -v`，最後不是 `OK` 就停；用 `git describe --tags --abbrev=0`（從目前的 commit 往回找最近的一個 tag）找上一個 tag，有就只看 `<tag>..HEAD` 的 `git log --oneline`、沒有就看全部，依 type 分組（第 1 章 changelog 的格式）；把 `## <version> (YYYY-MM-DD)` 那段插到 `CHANGELOG.md` 最上面（沒有就建、有就插在第一行前）；`git add CHANGELOG.md && git commit -m "chore: release <version>"`；`git tag v<version>`；最後印結果並提醒**沒有 push**。限制：只動 `CHANGELOG.md`；絕不 push。
 
 自測：重開 `claude` 後輸入 `/`，清單有 `release`，旁邊提示 `<version>`。
 
@@ -154,7 +154,7 @@ echo '{"tool_name":"Bash","tool_input":{"command":"echo push"}}' | python3 .clau
 
 規格：`meta.name` 是 `'ship-check'`、有 `description`、`phases` 列出兩站；prompt 要**自足**（subagent 看不到主對話，要讀哪些檔、對照什麼、回什麼都寫進去）；每個 agent 都不改檔。
 
-做法：把第 3 章的 `review-flow.js` 複製成 `ship-check.js`，改五處——① `meta` 的 name／description／phases；② `reviewPrompt` 改成「先讀 SPEC.md 再對照指定檔案」的 prompt；③ `parallel` 裡兩個 agent 的檔案與 label；④ 加一個 `VERDICT` schema，最後那個 `agent()` 的選項加 `schema: VERDICT`；⑤ `return summary` 改成 `return verdict`。Verdict 的 schema 長這樣：
+做法：`cp solutions/ch3-workflow/.claude/workflows/review-flow.js .claude/workflows/ship-check.js`（第 3 章貼的那份已被重置洗掉，`solutions/` 有留），然後改五處——① `meta` 的 name／description／phases；② `reviewPrompt` 改成「先讀 SPEC.md 再對照指定檔案」的 prompt；③ `parallel` 裡兩個 agent 的檔案與 label；④ 加一個 `VERDICT` schema，最後那個 `agent()` 的選項加 `schema: VERDICT`；⑤ `return summary` 改成 `return verdict`。Verdict 的 schema 長這樣：
 
 ```js
 const VERDICT = {
@@ -328,7 +328,7 @@ const VERDICT = {
    </TabItem>
    </Tabs>
 
-   預期 `Ran 8 tests` 與 `OK`——`tests.test_todo` 只跑 `tests/test_todo.py` 這一個檔（`main` 上 6 個，feat 加了 2 個）；第 5 章的 `python3 -m unittest -v` 跑的是全部三個檔的 31 個。
+   預期 `Ran 8 tests`（或更多——SPEC.md 只要求至少加兩個測試，Claude 多寫幾個也算）與 `OK`——`tests.test_todo` 只跑 `tests/test_todo.py` 這一個檔（`main` 上 6 個，feat 至少加 2 個）；第 5 章的 `python3 -m unittest -v` 跑的是全部三個檔的 31 個。
 
 9. **收掉兩個 worktree**：CLI：回 feat、docs 兩個終端機各打 `/exit`，選 **remove**（已 merge，安全；沒問的話自己收：`git worktree remove .claude/worktrees/feat && git branch -d worktree-feat`，`docs` 同理）。Orca：各打 `/exit`，側欄刪掉 `feat`、`docs`。然後在主 checkout：
 
@@ -420,7 +420,7 @@ const VERDICT = {
 
 - 步驟 5：`/hooks`、`/`、`@` 三個地方都看得到你寫的東西。
 - 步驟 6：兩個 worktree 裡 `ls SPEC.md .claude/hooks/` 都有東西——起點是你本機的 `main`，不是 `origin/main`。
-- 步驟 8：兩次 merge 沒衝突，`Ran 8 tests … OK`；`git log --oneline --graph` 最上面兩個 merge 節點。
+- 步驟 8：兩次 merge 沒衝突，`Ran 8 tests`（或更多）與 `OK`；`git log --oneline --graph` 最上面兩個 merge 節點。
 - 步驟 10：doc-checker 的回報帶 `檔名:行號`（或一句「文件與程式一致」；實跑時它常會自己加標題、一筆寫成多行，跟第 2 章一樣，行號有就好），而且 `git status` 沒有任何檔被它改；`/workflows` 看得到 Check 兩個 agent 與 Verdict 一個 agent，回到對話的 `verdict` 是 `go`；`/release 1.0.0` 之後 `git tag` 有 `v1.0.0`、`CHANGELOG.md` 第一行是 `## 1.0.0 (今天日期)`（條目會包含 clone 來的那幾個 commit，這是正常的——它們也還沒出過版本）；push 被擋，訊息含「已擋下」，`git status --porcelain` 沒有輸出。
 - 步驟 11：六組全 ✓，最後是 `CAPSTONE_OK` 那塊；`python3 src/todo.py remove 1` 真的能用。
 

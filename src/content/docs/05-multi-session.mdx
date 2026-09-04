@@ -345,7 +345,7 @@ done
 	{ text: "Merge made by the 'ort' strategy.", kind: 'out' },
 	{ text: '……', kind: 'dim' },
 	{ text: 'Ran 32 tests in 3.412s', kind: 'out' },
-	{ text: 'OK', kind: 'ok' },
+	{ text: 'OK (skipped=2)', kind: 'ok' },
 	{ text: 'git log --oneline --graph', kind: 'cmd' },
 	{ text: "*   f3a2c19 Merge branch 'worktree-b'", kind: 'out' },
 	{ text: '|\\', kind: 'out' },
@@ -356,7 +356,7 @@ done
 兩個 merge 節點＋32 個測試 OK＝這一章的完成證明。hash 與測試秒數每次不同。
 </TermDemo>
 
-- 步驟 5 的 merge 沒有衝突；`python3 -m unittest -v` 最後幾行是 `Ran 32 tests`（或更多——`main` 本來有 31 個，A 每補一個測試就加一）與 `OK`。看到 `OK (skipped=2)` 也算過：那兩個是比對教材站原始碼的測試，單獨 clone 練習 repo 時會跳過（機器沒裝 node 的話會再多跳兩個，`skipped=4` 也正常）。
+- 步驟 5 的 merge 沒有衝突；`python3 -m unittest -v` 最後幾行通常是 `Ran 32 tests`（或更多——`main` 本來有 31 個，A 每補一個測試就加一）與 `OK (skipped=2)`。那兩個跳過的是跟教材站原始碼比對用的測試：你只 clone 了練習 repo、沒有站台原始碼，跳過是正常結果，不是錯誤（機器沒裝 node 的話會再多跳兩個，`skipped=4` 也正常）。
 - `git log --oneline --graph` 最上面有**兩個 merge 節點**（CLI 路線是 `Merge branch 'worktree-a'`、`Merge branch 'worktree-b'`；Orca 路線分支名預設是任務名，會是 `Merge branch 'a'`、`Merge branch 'b'`——結構相同，只有名字不同）。
 - 先 `python3 src/todo.py add 測試` 再 `python3 src/todo.py list --json`，印出含 `text` 與 `done` 的 JSON 陣列（空清單印什麼依 A 的實作，不一定是 `[]`）。
 - 步驟 7 之後 `git worktree list` 只剩主 checkout 一行，`git branch` 沒有 `worktree-a`、`worktree-b`（Orca 路線：沒有 `a`、`b`）。
@@ -367,6 +367,7 @@ done
 - **merge 衝突**：`git merge --abort`，回那個 session 說「只改指定檔案，重做一次」，它多半是動到了不該動的檔。
 - **remove 顯示 locked**：`git worktree unlock .claude/worktrees/<name>` 再 remove 一次。
 - **B 動了 src/**：提示詞邊界沒寫清楚，這是本章要你學到的事——把「不要動 src/ 與 tests/」寫進去再來一次。
+- **`list --json` 印出用法說明、不是 JSON**：A 加了函式，但沒把 `--json` 接進 `main()` 的分派（原本是 `command == "list" and not rest`）。回 session A 說「`list --json` 現在會印用法，請把旗標接進 main 的分派並補測試，做完只 commit」，主 checkout 再 `git merge --no-ff --no-edit worktree-a` 一次。
 - **A 或 B 的 session 中途關掉、還沒 commit**：再打一次 `claude --worktree a`（或 `b`）會直接回到同一個 worktree，跟它說「繼續，做完只 commit 不要 push」。
 - **merge 做到一半失敗**：`git merge --abort` 回到 merge 前的狀態；兩個 worktree 與分支都還在，修好再做一次步驟 5。
 - **想整章重做**：步驟 1 的「已 clone／重跑」那一段就是為此準備的，它只清 `a`、`b` 與 `main` 上的練習結果。

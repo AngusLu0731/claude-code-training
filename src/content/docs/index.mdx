@@ -50,13 +50,14 @@ import { CLAUDE_CODE_VERSION, VERIFIED_ON } from '../../data/version';
 - **stdin／stderr／exit code**：餵給程式的輸入／程式印錯誤訊息用的管道／程式結束時回報的數字（`0`＝正常）。第 4 章的 hook 就靠這三樣跟 Claude Code 溝通。
 - **環境變數**：shell 傳給程式的鍵值，例如 `TODO_FILE=/tmp/x.json python3 src/todo.py list`。
 - **`git status --porcelain`**：精簡格式的 `git status`：`??`＝新檔、還沒被 git 追蹤；` M`＝已追蹤的檔被改了。各章「預期看到」拿它當證據。
+- **token／context**：token 是內容量的計量單位；context 是 Claude 當下記得的所有內容（這段對話裡讀過的檔、講過的話）。留在 context 裡的東西，之後每一句對話都要重新送一次——第 2 章會用數字算給你看。
 
 ### 選一條路：CLI 或 Orca
 
 全站的操作步驟提供兩條等價的路，帶分頁的區塊點一下就能切換；選擇會記住並同步到全站的所有分頁：
 
 - **CLI**：直接在系統終端機開 `claude`。什麼都不用多裝。
-- **Orca**：在 [Orca](https://www.onorca.dev/)（開源的 Agent Development Environment，桌面應用）裡跑 Claude Code。它的核心概念是「一個任務一個 git worktree」，每個 worktree 有自己的終端機與 agent——到第 5 章你會發現它把整章要手動做的事變成了 UI。
+- **Orca**：在 [Orca](https://www.onorca.dev/)（開源的 Agent Development Environment，桌面應用）裡跑 Claude Code。它的核心概念是「一個任務一個 git worktree」（worktree＝repo 的一份獨立工作目錄，第 5 章才會教，現在知道這句就好），每個 worktree 有自己的終端機與 agent——到第 5 章你會發現它把整章要手動做的事變成了 UI。
 
 兩條路跑的是**同一個 Claude Code**：Orca 直接沿用 `~/.claude` 的登入與設定，`.claude/` 專案檔、`/指令`、subagent、hooks 全部相同。所以只有「怎麼開出一個 session、怎麼重置起點」的區塊有分頁；提示詞、檔案內容、`/指令` 兩條路共用。
 
@@ -100,7 +101,7 @@ auto／manual 權限模式看到的提示不一樣（有人會被問「要不要
 </Aside>
 
 <Aside type="caution" title="常常需要兩個終端機">
-從第 4 章起，很多步驟要你在 `claude` 開著的同時「在終端機」下 git 指令或貼檔案。請習慣開兩個視窗、都 `cd` 到 repo：一個跑 `claude`、一個跑 shell。或者在 `claude` 的提示符最前面打 `!`（例如 `!git status`），Claude Code 會直接執行那行 shell 指令、不交給 Claude——之後各章寫「`!ls …`」就是這個意思。
+從第 4 章起，很多步驟要你在 `claude` 開著的同時「在終端機」下 git 指令或貼檔案。請習慣開兩個以上的視窗、都 `cd` 到 repo：一個跑 `claude`、一個跑 shell（第 5 章與期末會用到三個）。或者在 `claude` 的提示符最前面打 `!`（例如 `!git status`），Claude Code 會直接執行那行 shell 指令、不交給 Claude——之後各章寫「`!ls …`」就是這個意思。
 </Aside>
 
 ### 共用步驟（每一章都從這裡開始）
