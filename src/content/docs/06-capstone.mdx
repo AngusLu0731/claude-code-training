@@ -9,12 +9,15 @@ import Checklist from '../../components/Checklist.astro';
 import ResetNote from '../../components/ResetNote.astro';
 import TermDemo from '../../components/TermDemo.astro';
 import CapstoneFlowDiagram from '../../components/diagrams/CapstoneFlowDiagram.astro';
+import DeliveryRef from '../../components/DeliveryRef.astro';
 
 ## 作業
 
 <p class="one-liner">一句話：五章的東西全部用上，把練習 repo 的 todo CLI 出成 v1.0.0——這次工具檔要自己寫，做完有驗收腳本告訴你過了沒。</p>
 
 <CapstoneFlowDiagram />
+
+<DeliveryRef code="A2F" />
 
 前五章每章給你一份檔案貼、看一個現象。這一章反過來：**不給檔案，只給規格**。你自己寫四樣工具（hook 是兩個檔，共五個檔），再用它們走完一次真正的交付流程：
 
@@ -241,6 +244,8 @@ const VERDICT = {
 ```text
 讀 SPEC.md，只改 README.md 完成「文件」那一節，不要動 src/ 與 tests/；用訊息「docs: document remove command」commit，不要 push
 ```
+
+<DeliveryRef code="A2F" />
 
 ## 你來做
 
