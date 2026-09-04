@@ -7,7 +7,7 @@
 	<code>.claude/</code> 的檔案），但<strong>不會</strong>動被 gitignore 的
 	<code>.todo.json</code>（只影響 <code>list</code> 顯示的項目，想清就 <code>rm -f .todo.json</code>）與
 	<code>.claude/settings.local.json</code>（存的是你核准過的權限，留著沒關係）。<code>origin/main</code> 是 GitHub 上那份 main 在你電腦裡的複本，所以
-	<code>reset --hard origin/main</code>＝回到跟 GitHub 一模一樣。
+	<code>reset --hard origin/main</code>＝回到跟 GitHub 一模一樣。最後的 <code>git worktree prune</code> 是第 5 章才用得到的清理，現在跑了沒作用也無害。
 </p>
 
 <style>

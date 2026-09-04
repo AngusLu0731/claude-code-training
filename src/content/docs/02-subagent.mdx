@@ -50,7 +50,7 @@ Subagent 是主對話派出去的另一個 Claude：它有自己的 context（�
 
 ### Agent tool 與定義檔
 
-主對話用 **Agent tool** 派 subagent，參數之一是 `subagent_type`，也就是定義檔的 `name`。定義檔放在專案的 `.claude/agents/<name>.md`（只在這個專案可用）或 `~/.claude/agents/<name>.md`（你所有專案都可用），格式是 YAML frontmatter 加 Markdown 正文：
+定義檔放在專案的 `.claude/agents/<name>.md`（只在這個專案可用）或 `~/.claude/agents/<name>.md`（你所有專案都可用），格式是 YAML frontmatter 加 Markdown 正文；`name` 就是之後 `@agent-<name>` 用的名字（Claude 內部是用一個叫 Agent 的工具把它派出去，靠這個名字認人）：
 
 ```markdown
 ---
@@ -64,10 +64,10 @@ tools: Read, Grep, Glob
 
 | 欄位 | 作用 |
 | --- | --- |
-| `name` | 必填，小寫與連字號；就是 `subagent_type` 與 `@agent-<name>` 用的名字 |
+| `name` | 必填，小寫與連字號；就是 `@agent-<name>` 用的名字 |
 | `description` | 必填，寫「什麼情況該派它」，Claude 據此自動選用 |
 | `tools` | 允許的工具清單；不寫就繼承全部。`Read`（讀檔）、`Grep`（在檔案內容裡搜字串）、`Glob`（照檔名樣式找檔案）三個都只會讀、不會寫，所以審查員只給這三個 |
-| `model` | 可選：`sonnet`、`opus`、`haiku` 或 `inherit`（預設） |
+| `model` | 可選：`sonnet`、`opus`、`haiku`、`inherit`（預設），或完整的 model ID |
 
 ### 內建的 subagent，跟你的並列
 
@@ -83,7 +83,11 @@ Claude Code 本來就帶著幾個內建 subagent：**Explore**（唯讀的程式
 
 ### 看它在做什麼
 
-派出去之後，對話裡會多一列 subagent 的進度（名字、跑了多久、用了多少 token）。點進去（或在任務面板——畫面下方列出背景工作的那個區塊——按下箭頭再 Enter；也可以按 ctrl+o 展開逐字稿）可以看它讀了哪些檔、回了什麼；主對話收到的是最後那段摘要。
+派出去之後，對話裡會多一列 subagent 的進度（名字、跑了多久、用了多少 token）；主對話收到的是最後那段摘要。想看它讀了哪些檔、回了什麼，三種方法擇一：
+
+1. 對話裡那列進度：按 ↓ 選到它、按 Enter。
+2. 打 `/tasks`（列出背景工作的面板），選它。
+3. 按 ctrl+o 看整段逐字稿（第 1 章用過）。
 
 ### 實務案例：把權限寫進定義檔
 
@@ -154,7 +158,7 @@ Claude Code 本來就帶著幾個內建 subagent：**Explore**（唯讀的程式
    EOF
    ````
 
-4. 建完 `.claude/` 檔案，保險起見重開一次（agents 其實有即時偵測、通常不重開也找得到；hooks 與 workflow 才一定要重開）：
+4. 建完 `.claude/` 檔案，保險起見重開一次（agents 其實有即時偵測、通常不重開也找得到；hooks 與 workflow 也多半會自動讀到，但本教材一律重開，最省事）：
 
    <Tabs syncKey="tool">
    <TabItem label="CLI">
@@ -185,6 +189,8 @@ Claude Code 本來就帶著幾個內建 subagent：**Explore**（唯讀的程式
    用 reviewer subagent 審 src/todo.py，回報要含行號
    ```
 
+   派出去後 Claude 可能先問你要不要允許它用 Read，選允許。
+
 </Steps>
 
 ### 預期看到
@@ -198,7 +204,7 @@ Claude Code 本來就帶著幾個內建 subagent：**Explore**（唯讀的程式
 	{ text: 'src/todo.py:28 — save_items 直接覆寫，寫入中斷會遺失資料', kind: 'out' },
 	{ text: '整體：功能正確，但錯誤處理與測試涵蓋需要補強。', kind: 'out' },
 ]}>
-橘色那列是 reviewer 的進度——工作在 subagent 的房間裡做；每筆回報都帶行號。token 數與筆數每次不同。
+橘色那列是 reviewer 的進度——工作在 subagent 的房間裡做；每筆回報都帶行號。token 數與筆數每次不同，回報格式也不會跟圖一模一樣（可能多標題、一筆多行），行號有就好。
 </TermDemo>
 
 - 對話裡出現一列 **reviewer** 的 subagent 進度（不是主對話自己讀檔）；展開能看到它用 Read 讀了 `src/todo.py`。

@@ -86,7 +86,7 @@ claude --worktree <name>
 ```
 
 Claude Code 會在 repo 根目錄下建 `.claude/worktrees/<name>/`（一份獨立的工作目錄），並開一條新分支 `worktree-<name>`，然後在那個目錄裡啟動 session。`-w` 是同一件事的縮寫。
-同名再開一次，會直接進既有的 worktree（自己先用 `git worktree add .claude/worktrees/<name> -b worktree-<name> <起點>` 開好的也算）。它預設從 **`origin/main`**（GitHub 上那份 `main` 在你電腦裡的複本）長出來，所以每個 worktree 的起點都是乾淨的——反過來說，只在本機 commit、還沒 push 的東西不會出現在新 worktree 裡。期末作業會碰到這件事，到時用 `settings.json` 的 `worktree.baseRef` 讓它改從本機 HEAD 長。
+同名再開一次，會直接進既有的 worktree（自己先用 `git worktree add .claude/worktrees/<name> -b worktree-<name> <起點>` 開好的也算）。它預設從 **`origin/main`**（GitHub 上那份 `main` 在你電腦裡的複本）長出來，所以每個 worktree 的起點都是乾淨的——反過來說，只在本機 commit、還沒 push 的東西不會出現在新 worktree 裡。期末作業會碰到這件事，到時用 `settings.json` 的 `worktree.baseRef` 讓它改從本機 HEAD（＝你目前所在的那個 commit，也就是本機 `main` 最新的一個）長。
 
 </TabItem>
 <TabItem label="Orca">
@@ -121,7 +121,7 @@ git merge --no-ff --no-edit worktree-b
 <Tabs syncKey="tool">
 <TabItem label="CLI">
 
-在 worktree session 打 `/exit`，如果裡面有改動，Claude Code 會問要 **keep** 還是 **remove**：
+在 worktree session 打 `/exit`，如果裡面有還沒 merge 出去的東西（未 commit 的改動、或新的 commit），Claude Code 會問要 **keep** 還是 **remove**：
 
 - **keep**：保留目錄與分支，之後 `claude --worktree <同名>` 可以回來繼續。
 - **remove**：刪掉目錄與分支，**裡面沒 merge 出去的改動一起消失**。
@@ -169,7 +169,7 @@ done
    <Tabs syncKey="tool">
    <TabItem label="CLI">
 
-   第一次做就 clone；已經 clone 過、或要重做這一章，用第二段把前一次留下的 worktree、分支與 merge 結果清掉。
+   第一次做就 clone；已經 clone 過、或要重做這一章，用第二段把前一次留下的 worktree、分支與 merge 結果清掉。**已經在 repo 目錄裡的人不要再貼 clone 這段。**
 
    ```bash
    git clone https://github.com/AngusLu0731/claude-code-practice.git
@@ -275,7 +275,7 @@ done
    只改 README.md 加三個使用範例，不要動 src/ 與 tests/，做完只 commit 不要 push
    ```
 
-5. **收斂（主 checkout）**：等 A、B 都回報「已 commit」再動手。
+5. **收斂（主 checkout）**：等 A、B 都回報「已 commit」再動手。A、B 在 `git commit` 前可能停在「要不要允許」，兩個視窗都看一眼，別乾等。
 
    <Tabs syncKey="tool">
    <TabItem label="CLI">
@@ -285,6 +285,8 @@ done
    ```bash
    git merge --no-ff --no-edit worktree-a && git merge --no-ff --no-edit worktree-b && python3 -m unittest -v
    ```
+
+   `&&`＝前一個成功才跑下一個：第一個 merge 衝突時後面不會跑，直接看故障排除「merge 衝突」。
 
    </TabItem>
    <TabItem label="Orca">

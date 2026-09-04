@@ -79,7 +79,7 @@ cat > SPEC.md <<'EOF'
 
 ## 測試
 
-- `tests/test_todo.py` 至少加兩個測試：移除成功（清單少一筆、編號重排）、錯誤編號（exit 1、清單不變）。
+- `tests/test_todo.py` 至少加兩個測試（測試函式名稱要含 `remove`）：移除成功（清單少一筆、編號重排）、錯誤編號（exit 1、清單不變）。
 
 ## 文件
 
@@ -96,22 +96,65 @@ EOF
 
 兩個檔，形狀跟第 4 章一樣，只換 matcher 與規則：
 
-- `.claude/settings.json`：`PreToolUse`，matcher 是 **`Bash`**（push 是 Bash 工具跑的，`Edit|Write` 攔不到），command 用 `$CLAUDE_PROJECT_DIR` 指到 `.claude/hooks/push_gate.py`。同一個檔再加一個跟 hook 無關的鍵 `worktree.baseRef`——第 5 章講過 `--worktree` 預設從 `origin/main` 長，設成 `head` 就改從你本機的 HEAD 長，步驟 6 開的 worktree 才會帶著你沒 push 的工具鏈與 `SPEC.md`（[官方文件](https://code.claude.com/docs/en/worktrees#choose-the-base-branch)）。整個檔的形狀：
+- `.claude/settings.json`：`PreToolUse`，matcher 是 **`Bash`**（push 是 Bash 工具跑的，`Edit|Write` 攔不到），command 用 `$CLAUDE_PROJECT_DIR` 指到 `.claude/hooks/push_gate.py`。同一個檔再加一個跟 hook 無關的鍵 `worktree.baseRef`——第 5 章講過 `--worktree` 預設從 `origin/main` 長，設成 `head` 就改從你本機的 HEAD 長，步驟 6 開的 worktree 才會帶著你沒 push 的工具鏈與 `SPEC.md`（[官方文件](https://code.claude.com/docs/en/worktrees#choose-the-base-branch)）。這個檔沒有要你設計的部分，跟第 4 章那份只差 matcher、檔名與多一個 `worktree` 鍵，可以直接貼（`\"` 是 JSON 字串裡放引號的寫法，第 4 章講過）：
 
   ```json
   {
-    "hooks": { "PreToolUse": [ { "matcher": "Bash", "hooks": [ { "type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/push_gate.py\"" } ] } ] },
+    "hooks": {
+      "PreToolUse": [
+        {
+          "matcher": "Bash",
+          "hooks": [
+            { "type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/push_gate.py\"" }
+          ]
+        }
+      ]
+    },
     "worktree": { "baseRef": "head" }
   }
   ```
 
 - `.claude/hooks/push_gate.py`：讀 stdin JSON 的 `tool_input.command`。**同一段指令裡同時出現 `git` 與 `push`**（`git push origin main`、`git push --tags`、`cd x && git push` 都算）→ 往 stderr 印一句含「已擋下」的理由，`exit 2`。其他情況 `exit 0`，並在 stderr 留一行 `[push-gate] skip: 原因`；stdin 不是 JSON、沒有 `command` 欄位也是 `exit 0`。
 
-起手式：第 4 章貼的 `spec_gate.py` 已經被步驟 1 的重置洗掉了，但練習 repo 的 `solutions/` 留著一份——`cp solutions/ch4-hooks/.claude/hooks/spec_gate.py .claude/hooks/push_gate.py`。`gate()` 的第 1、2 段（拿 `file_path`、算相對路徑）都不需要了，改成從 `tool_input` 拿 `command`，只留第 3 段的規則判斷。規則本身不用正則，`"git" in command and "push" in command` 這種最簡單的寫法就能過驗收（代價是 `git commit -m "push fix"` 也會被擋——規格說了寧可誤擋）。
+起手式：不用從第 4 章那支 70 行的 `spec_gate.py` 刪（要對照的話它在 `solutions/ch4-hooks/.claude/hooks/`），直接用這個骨架——只有 `BLOCK_MSG` 的內容與 `TODO` 那一行是你要寫的：
+
+```python
+#!/usr/bin/env python3
+"""PreToolUse hook：不准從 Claude session 執行 git push。"""
+import json
+import sys
+
+BLOCK_MSG = "已擋下：……"   # 你的理由：要含「已擋下」，並叫它停下來回報、不要換指令再試
+
+
+def skip(reason):
+    print("[push-gate] skip: " + reason, file=sys.stderr)
+    return 0
+
+
+def main():
+    try:
+        payload = json.load(sys.stdin)   # Claude Code 從 stdin 餵進來的 JSON
+    except (ValueError, OSError):
+        return skip("stdin 不是合法 JSON")
+    command = (payload.get("tool_input") or {}).get("command") if isinstance(payload, dict) else None
+    if not command:
+        return skip("tool_input 沒有 command")
+    if ...:   # TODO：規則判斷——同一段指令裡同時出現 git 與 push
+        print(BLOCK_MSG, file=sys.stderr)
+        return 2
+    return skip("不是 git push")
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+```
+
+規則本身不用正則，`"git" in command and "push" in command` 這種最簡單的寫法就能過驗收（代價是 `git commit -m "push fix"` 也會被擋——規格說了寧可誤擋）。
 
 兩個常見的坑：只找字串 `push` 會誤擋 `echo push`；只擋開頭是 `git push` 會漏掉 `cd x && git push`。寧可誤擋，不要漏擋——但驗收會兩邊都試。
 
-自測（在終端機，不在 Claude 裡）：
+自測（在終端機，不在 Claude 裡）。`|` 把左邊那段 JSON 當右邊程式的 stdin——就是 Claude Code 餵 hook 的方式；`$?` 是上一個指令的 exit code：
 
 ```bash
 echo '{"tool_name":"Bash","tool_input":{"command":"git push --tags"}}' | python3 .claude/hooks/push_gate.py; echo "exit=$?"
@@ -131,7 +174,19 @@ echo '{"tool_name":"Bash","tool_input":{"command":"echo push"}}' | python3 .clau
 | `argument-hint` | `<version>` | 打 `/release` 時提示要帶版本號 |
 | `disable-model-invocation` | `true` | 它會 commit、打 tag——有副作用的步驟不讓 Claude 自己決定要不要跑（第 1 章那張表） |
 
-正文步驟（順序就是安全網）：版本號從 `$ARGUMENTS` 拿，沒給就停下來問；先確認在 `main` 且工作樹乾淨（`git status --porcelain` 沒有輸出——版本要建立在全部 commit 的狀態上），不是就停下來回報；再跑 `python3 -m unittest -v`，最後不是 `OK` 就停；用 `git describe --tags --abbrev=0`（從目前的 commit 往回找最近的一個 tag）找上一個 tag，有就只看 `<tag>..HEAD` 的 `git log --oneline`、沒有就看全部，依 type 分組（第 1 章 changelog 的格式）；把 `## <version> (YYYY-MM-DD)` 那段插到 `CHANGELOG.md` 最上面（沒有就建、有就插在第一行前）；`git add CHANGELOG.md && git commit -m "chore: release <version>"`；`git tag v<version>`；最後印結果並提醒**沒有 push**。限制：只動 `CHANGELOG.md`；絕不 push。
+正文照這個順序寫成編號清單（順序就是安全網）：
+
+1. 版本號從 `$ARGUMENTS` 拿（例如 `1.0.0`）；沒給就停下來問使用者，不要自己猜。
+2. 確認在 `main` 且工作樹乾淨：`git status --porcelain` 沒有輸出（版本要建立在全部 commit 的狀態上）；不是就停下來回報。
+3. 跑 `python3 -m unittest -v`，最後一行要是 `OK` 或 `OK (skipped=N)`（第 5 章解釋過那幾個跳過）；不是就停下來回報、不要出版。
+4. 用 `git describe --tags --abbrev=0`（從目前的 commit 往回找最近的一個 tag）找上一個 tag：有就只看 `<tag>..HEAD` 的 `git log --oneline`，沒有就看全部。
+5. 依 commit 訊息開頭的 type 分組（第 1 章 changelog 的格式），只列有內容的分組。
+6. 用 `date +%F` 取今天日期，把 `## <version> (YYYY-MM-DD)` 那段插到 `CHANGELOG.md` 最上面（沒有就建、有就插在第一行前，不動舊內容）。
+7. `git add CHANGELOG.md && git commit -m "chore: release <version>"`。
+8. `git tag v<version>`。
+9. 印出那段 changelog 與 tag 名，並提醒：**沒有 push**，要推請使用者自己在終端機做。
+
+限制：只動 `CHANGELOG.md`；絕不 push。驗收會在正文找這五個字串，請原樣寫：`$ARGUMENTS`、`unittest`、`CHANGELOG.md`、`git tag`、`push`。
 
 自測：重開 `claude` 後輸入 `/`，清單有 `release`，旁邊提示 `<version>`。
 
@@ -139,7 +194,7 @@ echo '{"tool_name":"Bash","tool_input":{"command":"echo push"}}' | python3 .clau
 
 `.claude/agents/doc-checker.md`。frontmatter：`name: doc-checker`；`description` 寫**觸發時機**（「合併多個 session 的成果之後、出版之前」）而不是類別名；`tools: Read, Grep, Glob`——唯讀靠這一行，不靠「請不要改檔」。
 
-正文：讀 `src/todo.py` 的 `USAGE` 字串與 `main()` 實際接受的每個指令（名稱、參數、成功與失敗時印什麼）；讀 `README.md` 的「怎麼跑」與範例；逐一比對「程式有、文件沒提」與「文件寫了、程式沒有或行為不同」；每筆一行 `檔名:行號 — 差異與建議`；全部一致就只回一句「文件與程式一致」。
+正文：讀 `src/todo.py` 的 `USAGE` 字串與 `main()` 實際接受的每個指令（名稱、參數、成功與失敗時印什麼）；讀 `README.md` 的「怎麼跑」與範例；逐一比對「程式有、文件沒提」與「文件寫了、程式沒有或行為不同」；每筆一行 `檔名:行號 — 差異與建議`；全部一致就只回一句「文件與程式一致」。驗收會在正文找 `src/todo.py`、`README.md`、`行號` 三個字串，請原樣寫。
 
 自測：重開 `claude` 後輸入 `@`，選單有 `agent-doc-checker`。
 
@@ -150,7 +205,7 @@ echo '{"tool_name":"Bash","tool_input":{"command":"echo push"}}' | python3 .clau
 | 站 | 輸入 | 輸出 | 失敗怎麼辦 |
 | --- | --- | --- | --- |
 | **Check**：`parallel` 兩個 agent（thunk 形式） | 一個讀 `SPEC.md` 對照 `src/todo.py` 與 `tests/test_todo.py`；另一個讀 `SPEC.md` 對照 `README.md` | 各回 findings（第 3 章那份 `FINDINGS` schema 可以直接沿用） | 回 `null` 的用 `.filter(Boolean)` 濾掉，`log` 一行筆數 |
-| **Verdict**：一個 agent | 上一站合併後的 findings JSON | schema：`verdict` 只能是 `go` 或 `no-go`（用 `enum`，第 3 章那張「六個寫法」表的最後一列），加 `reasons` 字串陣列 | `return` 它，對話裡就看得到 |
+| **Verdict**：一個 agent | 上一站合併後的 findings JSON | schema：`verdict` 只能是 `go` 或 `no-go`（用 `enum`，第 3 章那張「七個寫法」表的最後一列），加 `reasons` 字串陣列 | `return` 它，對話裡就看得到 |
 
 規格：`meta.name` 是 `'ship-check'`、有 `description`、`phases` 列出兩站；prompt 要**自足**（subagent 看不到主對話，要讀哪些檔、對照什麼、回什麼都寫進去）；每個 agent 都不改檔。
 
@@ -243,7 +298,7 @@ const VERDICT = {
 
 2. **信任資料夾**：這個目錄還沒接受過信任對話的話，先 `claude` 接受再 `/exit`。
 
-3. **貼 SPEC.md、寫四樣工具**：照上面「規格」的 0 到 4 節，在終端機貼 `SPEC.md`，然後寫 `settings.json`＋`push_gate.py`、`release/SKILL.md`、`doc-checker.md`、`ship-check.js`。`release` 是唯一要自己建目錄的：先 `mkdir -p .claude/skills/release`（其他三個資料夾練習 repo 已預建，直接 `cat >` 或用編輯器存檔）。每寫完一份就做那一節的自測；hook 與 workflow 的自測不用開 `claude`，現在就能做。
+3. **貼 SPEC.md、寫四樣工具**：照上面「規格」的 0 到 4 節，在終端機貼 `SPEC.md`，然後寫 `settings.json`＋`push_gate.py`、`release/SKILL.md`、`doc-checker.md`、`ship-check.js`。`release` 是唯一要自己建目錄的：先 `mkdir -p .claude/skills/release`（其他三個資料夾練習 repo 已預建，直接 `cat >` 或用編輯器存檔）。每寫完一份就做那一節的自測；hook 與 workflow 的自測不用開 `claude`，現在就能做。四個檔都寫完先 `ls -R .claude` 對一次路徑——驗收每一組的第一項都是「檔案存不存在」，路徑打錯是最便宜的失敗。
 
 4. **先 commit 工具鏈**（有了 `baseRef: head`，worktree 會從你本機的 HEAD 長出來，但沒 commit 的檔案還是帶不過去；`SPEC.md` 兩個 session 都要讀）：
 
@@ -328,7 +383,7 @@ const VERDICT = {
    </TabItem>
    </Tabs>
 
-   預期 `Ran 8 tests`（或更多——SPEC.md 只要求至少加兩個測試，Claude 多寫幾個也算）與 `OK`——`tests.test_todo` 只跑 `tests/test_todo.py` 這一個檔（`main` 上 6 個，feat 至少加 2 個）；第 5 章的 `python3 -m unittest -v` 跑的是全部三個檔的 31 個。
+   預期 `Ran 8 tests`（或更多——SPEC.md 只要求至少加兩個測試，Claude 多寫幾個也算）與 `OK`——`tests.test_todo` 只跑 `tests/test_todo.py` 這一個檔（`main` 上 6 個，feat 至少加 2 個）；第 5 章的 `python3 -m unittest -v` 跑的是全部三個檔的 31 個。然後跑 `git log --oneline --graph | head -8`，看到兩行 `Merge branch` 再進步驟 9——步驟 9 會把分支刪掉，之後想補 merge 節點就得重做。
 
 9. **收掉兩個 worktree**：CLI：回 feat、docs 兩個終端機各打 `/exit`，選 **remove**（已 merge，安全；沒問的話自己收：`git worktree remove .claude/worktrees/feat && git branch -d worktree-feat`，`docs` 同理）。Orca：各打 `/exit`，側欄刪掉 `feat`、`docs`。然後在主 checkout：
 
@@ -433,7 +488,7 @@ const VERDICT = {
 - **`/release` 說工作樹不乾淨或測試沒過**：`git status`、`python3 -m unittest -v` 自己看一次——skill 的順序就是為了在這裡停下來。
 - **push 沒被擋**：`/hooks` 看 PreToolUse 有沒有 `Bash` 那條；matcher 寫成 `Edit|Write` 是最常見的錯。擋是擋了但 Claude 換了指令再試：你的理由那句要寫「不要換別的指令再試」。
 - **merge 時畫面變成一堆 `#`、打字沒反應**：git 開了 vim 要你確認合併訊息（指令少了 `--no-edit`）。打 `:wq` 再 Enter。
-- **驗收說 merge 節點不夠**：收斂時少了 `--no-ff`，git 用 fast-forward 把 `main` 直接挪到分支尾端、沒留合併 commit。重來：`git log --oneline` 找到訊息是「chore: release 工具鏈…」那行前面的 7 碼 hash → `git tag -d v1.0.0` → `git reset --hard <那個 hash>` → 重做步驟 8（這次記得 `--no-ff --no-edit`；分支還在就不用重做 worktree）→ 重做步驟 10 的 `/release`。
+- **驗收說 merge 節點不夠**：收斂時少了 `--no-ff`，git 用 fast-forward 把 `main` 直接挪到分支尾端、沒留合併 commit。重來：`git log --oneline` 找到訊息是「chore: release 工具鏈…」那行前面的 7 碼 hash → `git tag -d v1.0.0` → `git reset --hard <那個 hash>` → 重做步驟 8（這次記得 `--no-ff --no-edit`；分支還在就不用重做 worktree）→ 重做步驟 10 的 `/release`。如果步驟 9 已經 remove（分支已刪），feat／docs 的成果只剩 git 的 reflog 裡有：最簡單是回步驟 6 重開兩個 worktree 重做；進階做法是 `git reflog` 找到「feat: add remove command」那個 commit 的 hash，`git branch worktree-feat <hash>` 把分支接回來（docs 同理）再 merge。
 - **驗收說還有 worktree、或 remove 說 locked**：`git worktree list` 看是哪個；locked 就先 `git worktree unlock .claude/worktrees/<name>`，再 `git worktree remove` 那個路徑、`git branch -d` 它的分支、`git worktree prune`。
 - **驗收的 `[4/6]` 說找不到 node**：那組只做靜態檢查、stub 執行標示跳過，不算失敗。
 

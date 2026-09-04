@@ -38,6 +38,7 @@ import { CLAUDE_CODE_VERSION, VERIFIED_ON } from '../../data/version';
 - `claude --version` 顯示 **{CLAUDE_CODE_VERSION} 或更新**；比較舊就先 `claude update`。各章行為在幾個版本之間有分水嶺，版本太舊會跟站上寫的對不起來。
 - `python3 --version` 顯示 **3.9 或更新**（練習 repo 只用標準函式庫，不用裝套件）。
 - 有 `git`。
+- `node` 與 `make` 有沒有都做得完：沒 node 只是第 5 章的測試多跳兩個、期末驗收的 `[4/6]` 把 stub 執行標示跳過；沒 make 就用各章給的等價指令。
 
 ### 會用到、你可能沒見過的名詞
 
@@ -50,6 +51,11 @@ import { CLAUDE_CODE_VERSION, VERIFIED_ON } from '../../data/version';
 - **stdin／stderr／exit code**：餵給程式的輸入／程式印錯誤訊息用的管道／程式結束時回報的數字（`0`＝正常）。第 4 章的 hook 就靠這三樣跟 Claude Code 溝通。
 - **環境變數**：shell 傳給程式的鍵值，例如 `TODO_FILE=/tmp/x.json python3 src/todo.py list`。
 - **`git status --porcelain`**：精簡格式的 `git status`：`??`＝新檔、還沒被 git 追蹤；` M`＝已追蹤的檔被改了。各章「預期看到」拿它當證據。
+- **`2>/dev/null`**：把那一行的錯誤訊息丟掉。各章重置指令的第一行 `git merge --abort 2>/dev/null` 在沒有進行中的 merge 時會抱怨一句，不用理。
+- **`&&`**：前一個指令成功才跑下一個；中間失敗，後面就不會跑。
+- **`>`／`|`**：`>` 把左邊印出的字寫進右邊的檔（覆蓋）；`|` 把左邊印出的字當右邊程式的 stdin。
+- **`$?`**：上一個指令的 exit code（`0`＝正常）。
+- **`HEAD`**：你目前所在的那個 commit。
 - **token／context**：token 是內容量的計量單位；context 是 Claude 當下記得的所有內容（這段對話裡讀過的檔、講過的話）。留在 context 裡的東西，之後每一句對話都要重新送一次——第 2 章會用數字算給你看。
 
 ### 選一條路：CLI 或 Orca
@@ -101,7 +107,7 @@ auto／manual 權限模式看到的提示不一樣（有人會被問「要不要
 </Aside>
 
 <Aside type="caution" title="常常需要兩個終端機">
-從第 4 章起，很多步驟要你在 `claude` 開著的同時「在終端機」下 git 指令或貼檔案。請習慣開兩個以上的視窗、都 `cd` 到 repo：一個跑 `claude`、一個跑 shell（第 5 章與期末會用到三個）。或者在 `claude` 的提示符最前面打 `!`（例如 `!git status`），Claude Code 會直接執行那行 shell 指令、不交給 Claude——之後各章寫「`!ls …`」就是這個意思。
+第 1 到 3 章貼檔案時 `claude` 是關著的（前一步已 `/exit`），一個視窗就夠。從第 4 章起，很多步驟要你在 `claude` 開著的同時「在終端機」下 git 指令或貼檔案，請習慣開兩個以上的視窗、都 `cd` 到 repo：一個跑 `claude`、一個跑 shell（第 5 章與期末會用到三個）。或者在 `claude` 的提示符最前面打 `!`（例如 `!git status`），Claude Code 會直接執行那行 shell 指令、不交給 Claude——之後各章寫「`!ls …`」就是這個意思。
 </Aside>
 
 ### 共用步驟（每一章都從這裡開始）

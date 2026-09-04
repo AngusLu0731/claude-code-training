@@ -103,7 +103,7 @@ skill 是一個**資料夾**，不是一份檔。SKILL.md 保持精簡（官方�
 
 ### 實務案例：一個「寫 MR」的 skill
 
-一個團隊有一個「寫 MR」的 skill：frontmatter 裡的 description 列出觸發詞（「寫 MR」「建 MR」「update MR」），正文是編號步驟——先偵測改動範圍、再蒐集 diff、起草四段內文、**給使用者確認**、才呼叫命令列工具送出。
+一個團隊有一個「寫 MR」的 skill（MR＝GitLab 的 merge request，等於 GitHub 的 PR）：frontmatter 裡的 description 列出觸發詞（「寫 MR」「建 MR」「update MR」），正文是編號步驟——先偵測改動範圍、再蒐集 diff、起草四段內文、**給使用者確認**、才呼叫命令列工具送出。
 值得學的形狀：**觸發詞寫在 description**（自動載入才準）、**步驟編號**、**副作用之前一定有確認步驟**、**邊界情況單獨一段**。本章的 changelog skill 就是照這個形狀縮小版。
 
 ## 你來做
@@ -199,7 +199,7 @@ skill 是一個**資料夾**，不是一份檔。SKILL.md 保持精簡（官方�
 
    這份 skill 刻意沒寫 `allowed-tools`：Claude 跑 `git log` 前可能會照你目前的權限模式問一次，選允許即可；上面表格的 `allowed-tools: Bash(git log *)` 是你以後想省掉這個提示時才加。
 
-4. 建完 `.claude/` 檔案，保險起見重開一次（skills 其實有即時偵測、通常不重開也找得到；hooks 與 workflow 才一定要重開）：
+4. 建完 `.claude/` 檔案，保險起見重開一次（skills 其實有即時偵測、通常不重開也找得到；hooks 與 workflow 也多半會自動讀到，但本教材一律重開，最省事）：
 
    <Tabs syncKey="tool">
    <TabItem label="CLI">
@@ -218,7 +218,7 @@ skill 是一個**資料夾**，不是一份檔。SKILL.md 保持精簡（官方�
    </TabItem>
    </Tabs>
 
-5. 打 `/changelog`（輸入 `/` 時清單裡應該看得到它，旁邊有 `[since-ref]` 的提示）。
+5. 打 `/changelog`（輸入 `/` 時清單裡應該看得到它，旁邊有 `[since-ref]` 的提示）。`since-ref` 可以是 tag、分支名或 commit hash（`A..HEAD`＝A 之後到現在的 commit）；本章直接打 `/changelog`，不帶參數。
 
 </Steps>
 
@@ -234,12 +234,12 @@ skill 是一個**資料夾**，不是一份檔。SKILL.md 保持精簡（官方�
 	{ text: '### feat', kind: 'out' },
 	{ text: '- add done command（a1b2c3d）', kind: 'out' },
 ]}>
-橘色那行「（changelog skill v1）」＝SKILL.md 正文被展開的證據；日期與條目依你的 git log 而定。
+橘色那行「（changelog skill v1）」＝SKILL.md 正文被展開的證據——預設畫面通常看不到它，這是 ctrl+o 逐字稿裡的樣子；日期與條目依你的 git log 而定。
 </TermDemo>
 
-- 送出 `/changelog` 後，對話裡展開的內容第一句是 **「（changelog skill v1）」**——那是 SKILL.md 正文被載入的證據（版面上沒看到的話，按 **ctrl+o** 展開對話逐字稿找；再按一次 ctrl+o 回到對話）。
+- 送出 `/changelog` 後，按 **ctrl+o** 展開對話逐字稿（再按一次回到對話）：展開的內容第一句是 **「（changelog skill v1）」**——那是 SKILL.md 正文被載入的證據。預設畫面通常不會直接印出這段，看不到是正常的，逐字稿裡才有。
 - Claude 跑 `git log --oneline`，依 type 分組，寫入 `CHANGELOG.md`，並把那段印給你看。
-- `git status --porcelain` 出現 `?? CHANGELOG.md`（`??`＝新檔、還沒被 git 追蹤）；打開檔案第一行是 `## Unreleased (今天日期)`，底下是 `### feat`、`### docs` 之類的分組條目。
+- `git status --porcelain` 有兩行：`?? .claude/skills/changelog/`（你貼的 skill，還沒進 git）與 `?? CHANGELOG.md`（`??`＝新檔、還沒被 git 追蹤）；打開 `CHANGELOG.md` 第一行是 `## Unreleased (今天日期)`，底下是 `### feat`、`### docs` 之類的分組條目。
 
 ### 實跑範例
 
@@ -266,7 +266,7 @@ skill 是一個**資料夾**，不是一份檔。SKILL.md 保持精簡（官方�
 <Checklist items={[
   { id: 'ch1-ex1-1', text: '.claude/skills/changelog/SKILL.md 貼好、重開後 / 清單看得到 changelog' },
   { id: 'ch1-ex1-2', text: '/changelog 後看得到「（changelog skill v1）」（必要時 ctrl+o 展開逐字稿）' },
-  { id: 'ch1-ex1-3', text: 'git status 出現 ?? CHANGELOG.md，內容有 ## Unreleased 與分組條目' },
+  { id: 'ch1-ex1-3', text: 'git status --porcelain 有 ?? .claude/skills/changelog/ 與 ?? CHANGELOG.md 兩行，CHANGELOG 內容有 ## Unreleased 與分組條目' },
 ]} />
 
 </Exercise>

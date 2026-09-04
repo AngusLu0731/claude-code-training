@@ -88,7 +88,7 @@ import { CLAUDE_CODE_VERSION } from '../../data/version';
 | --- | --- |
 | `export const meta = { name, description, phases }` | `meta` 必填，裡面 `name`、`description` 必填；`name` 就是之後的 `/name`。`phases` 選填，對應**啟動核准提示**列出的站名（title 要跟 `phase()` 打的完全一致）；進度畫面的分組是腳本裡的 `phase()` 呼叫決定的 |
 | `phase('Review')` | 之後的 `agent()` 都歸在這一組顯示 |
-| `agent(prompt, { label, phase, schema })` | 開一個 subagent。**prompt 要自足**（它看不到主對話）；給 `schema` 就回驗證過的物件，不用自己 parse |
+| `agent(prompt, { label, phase, schema })` | 開一個 subagent。大括號那包是選項，像 Python 的關鍵字參數：`label` 是進度畫面顯示的名字、`phase` 歸哪一組、`schema` 回覆形狀。**prompt 要自足**（它看不到主對話）；給 `schema` 就回驗證過的物件，不用自己解析 |
 | `parallel([() => agent(...), () => agent(...)])` | 同時跑、全部回來才繼續。每一項是 `() => agent(...)`——把「呼叫 agent」包成一個**還沒執行**的小函式（術語叫 thunk），由 `parallel` 決定何時同時執行；寫成 `[agent(...), agent(...)]` 會錯。任一個失敗會變 `null`，記得 `.filter(Boolean)` |
 | `pipeline(items, stage1, stage2)` | 每個 item 各自走完所有 stage，不互等；「每個檔案各自跑完整條流程」用這個。本教材的兩支 workflow 都只用 `parallel`，這列先知道有就好 |
 | `log('...')` | 在進度畫面印一行給人看 |
@@ -98,9 +98,9 @@ import { CLAUDE_CODE_VERSION } from '../../data/version';
 以 Claude Code {CLAUDE_CODE_VERSION} 實跑驗證；完整定義見 Agent SDK 的 Workflow tool。腳本是純 JavaScript（不能寫 TypeScript 型別），頂層可以直接 `await`。
 </Aside>
 
-### 沒寫過 JavaScript？先看懂這六個寫法
+### 沒寫過 JavaScript？先看懂這七個寫法
 
-下面練習要貼的 `review-flow.js` 只用到這六種寫法，看懂就能讀、也能改（期末作業要你自己寫一支）：
+下面練習要貼的 `review-flow.js` 只用到這七種寫法，看懂就能讀、也能改（期末作業要你自己寫一支）：
 
 | 寫法 | 意思 |
 | --- | --- |
@@ -109,7 +109,8 @@ import { CLAUDE_CODE_VERSION } from '../../data/version';
 | `() => agent(...)` | 把「呼叫 agent」包成一個**還沒執行**的小函式（thunk）；`parallel` 要的是這種函式的陣列 |
 | `await` | 等結果回來再往下。`const [todo, tests] = await parallel([...])`：兩個結果各自接住 |
 | `.filter(Boolean).flatMap((r) => r.findings)` | 先把 `null` 丟掉，再把每份的 `findings` 攤平成一個陣列 |
-| schema 物件 | 先寫好「回覆必須長什麼樣」：`type` 是 object／array／string／integer，`required` 列必填欄位，`properties` 描述每個欄位，`items` 描述陣列裡每一筆；要限制只能是幾個值之一，用 `enum: ['go', 'no-go']`（期末會用到） |
+| `JSON.stringify(x, null, 2)`、`'a' + 'b'` | 前者等於 Python 的 `json.dumps(x, indent=2)`；`+` 是字串相接（可以跨行接），字串裡的 `\n` 是換行 |
+| schema 物件 | 先寫好「回覆必須長什麼樣」：`type` 是 object／array／string／integer，`required` 列必填欄位，`properties` 描述每個欄位，`items` 描述陣列裡每一筆。最小例子：`{ type: 'object', required: ['line'], properties: { line: { type: 'integer' } } }`＝「必須是物件，一定要有整數欄位 line」。要限制只能是幾個值之一，用 `enum: ['go', 'no-go']`（期末會用到） |
 
 ### 兩種叫法，別搞混
 
@@ -227,9 +228,9 @@ import { CLAUDE_CODE_VERSION } from '../../data/version';
    </TabItem>
    </Tabs>
 
-5. 打 `/review-flow`。第一次會出現核准提示（列出 Review、Synthesize 兩個 phase），選 **Yes, run it**；auto 模式且之前核准過會直接開始。
+5. 輸入 `/` 沒看到 `/review-flow` 就回「前置檢查」第 4 步分流；有的話打 `/review-flow`。第一次會出現核准提示（列出 Review、Synthesize 兩個 phase），選 **Yes, run it**；auto 模式且之前核准過會直接開始。
 
-6. 跑的時候打 `/workflows`，選這一筆按 Enter 看進度。
+6. 跑的時候打 `/workflows`，選這一筆按 Enter 看進度。跑完了也還看得到，那筆會標 completed。
 
 </Steps>
 
